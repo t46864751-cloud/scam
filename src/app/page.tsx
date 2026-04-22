@@ -552,16 +552,20 @@ function FloatingScammers() {
 function SearchView() {
   const { setSelectedScammer } = useAppStore()
   const [query, setQuery] = useState('')
+  const [telegramId, setTelegramId] = useState('')
   const [results, setResults] = useState<ScammerResult[]>([])
   const [searched, setSearched] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleSearch = useCallback(async () => {
-    if (!query.trim()) return
+    if (!query.trim() && !telegramId.trim()) return
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+      const params = new URLSearchParams()
+      if (query.trim()) params.set('q', query.trim())
+      if (telegramId.trim()) params.set('id', telegramId.trim())
+      const res = await fetch(`/api/search?${params.toString()}`)
       const data = await res.json()
 
       if (!res.ok) {
@@ -601,28 +605,37 @@ function SearchView() {
           </span>
         </motion.h2>
         <p className="text-sm text-muted-foreground">
-          Введите имя и узнайте всё о человеке
+          Введите имя или Telegram ID
         </p>
       </div>
 
       <div className="relative max-w-lg mx-auto mb-6">
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl opacity-30 group-focus-within:opacity-60 blur transition-opacity" />
-          <div className="relative flex gap-2 p-1.5">
+          <div className="relative flex flex-col gap-2 p-1.5">
             <Input
               placeholder="Имя скамера..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 h-12 rounded-xl bg-background/80 border-0 focus-visible:ring-0 px-4 text-base"
+              className="h-12 rounded-xl bg-background/80 border-0 focus-visible:ring-0 px-4 text-base"
             />
-            <Button
-              onClick={handleSearch}
-              disabled={loading}
-              className="h-12 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white shrink-0"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            </Button>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Telegram ID..."
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value.replace(/[^\d]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1 h-12 rounded-xl bg-background/80 border-0 focus-visible:ring-0 px-4 text-base"
+              />
+              <Button
+                onClick={handleSearch}
+                disabled={loading || (!query.trim() && !telegramId.trim())}
+                className="h-12 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white shrink-0"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

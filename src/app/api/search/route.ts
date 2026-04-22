@@ -25,18 +25,24 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const query = searchParams.get('q')?.trim()
+    const telegramId = searchParams.get('id')?.trim()
 
-    if (!query) {
-      return NextResponse.json({ error: 'Введите запрос' }, { status: 400 })
+    if (!query && !telegramId) {
+      return NextResponse.json({ error: 'Заполните имя или ID' }, { status: 400 })
     }
 
-    // Search scammers by name
+    // Build where clause: search by name AND/OR telegramUserId
+    const conditions: any[] = []
+    if (query) {
+      conditions.push({ name: { contains: query, mode: 'insensitive' } })
+    }
+    if (telegramId) {
+      conditions.push({ telegramUserId: { contains: telegramId } })
+    }
+
     const scammers = await db.scammer.findMany({
       where: {
-        name: {
-          contains: query,
-          mode: 'insensitive',
-        },
+        OR: conditions,
       },
       take: 20,
     })
@@ -53,10 +59,11 @@ export async function GET(req: NextRequest) {
       )
 
       // Create SearchLog entries with scammerId linked
+      const logQuery = [query, telegramId].filter(Boolean).join(' | ')
       await db.searchLog.createMany({
         data: scammers.map((scammer) => ({
           scammerId: scammer.id,
-          query,
+          query: logQuery,
           ...(session?.user
             ? {
                 userId:
