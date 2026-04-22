@@ -1657,7 +1657,7 @@ function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
-      <div className="glass-strong rounded-2xl max-w-lg mx-auto">
+      <div className="glassmorphism-nav rounded-2xl max-w-lg mx-auto">
         <nav className="flex items-center justify-around py-2">
           {tabs.map((tab) => {
             if (tab.id === 'plus') {
@@ -1668,7 +1668,7 @@ function BottomNav() {
                   onClick={() => setCreateModalOpen(true)}
                   className="relative -mt-5"
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-shadow">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 hover:shadow-xl transition-all duration-300 ring-1 ring-white/20 ring-inset">
                     <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
                   </div>
                 </motion.button>
