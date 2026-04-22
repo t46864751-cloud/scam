@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
   })
 
   if (!token) {
-    // For API routes return 401 JSON, for pages redirect to login
+    // For API routes return 401 JSON, for pages redirect to register
     if (isProtectedApi) {
       return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
     }
@@ -51,8 +51,8 @@ export async function middleware(request: NextRequest) {
     if (isProtectedApi) {
       return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
     }
-    const loginUrl = new URL('/', request.url)
-    return NextResponse.redirect(loginUrl)
+    const registerUrl = new URL('/panel/register', request.url)
+    return NextResponse.redirect(registerUrl)
   }
 
   return NextResponse.next()
