@@ -584,7 +584,7 @@ function SearchView() {
     } finally {
       setLoading(false)
     }
-  }, [query])
+  }, [query, telegramId])
 
   return (
     <motion.div
