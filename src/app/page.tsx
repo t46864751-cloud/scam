@@ -163,7 +163,7 @@ function AuthView() {
                 placeholder="Имя пользователя"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="h-12 rounded-xl bg-white/5 border-white/10 focus:border-blue-500/50 pl-4"
+                className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4"
                 required
                 minLength={3}
               />
@@ -175,7 +175,7 @@ function AuthView() {
                 placeholder="Пароль"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-xl bg-white/5 border-white/10 focus:border-blue-500/50 pl-4 pr-12"
+                className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
                 required
                 minLength={6}
               />
@@ -276,7 +276,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
         onClick={onClose}
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
         <motion.div
           initial={{ y: 300, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -295,7 +295,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors shrink-0"
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -307,7 +307,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   placeholder="Имя пользователя"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="h-12 rounded-xl bg-white/5 border-white/10 focus:border-blue-500/50 pl-4"
+                  className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4"
                   required
                   minLength={3}
                 />
@@ -319,7 +319,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   placeholder="Пароль"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 rounded-xl bg-white/5 border-white/10 focus:border-blue-500/50 pl-4 pr-12"
+                  className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
                   required
                   minLength={6}
                 />
@@ -426,7 +426,7 @@ function FloatingScammers() {
       {/* Cosmic container */}
       <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: '320px' }}>
         {/* Starfield background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/40 via-purple-950/20 to-black/60 rounded-3xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/40 via-indigo-50/20 to-gray-100/60 dark:from-blue-950/40 dark:via-purple-950/20 dark:to-black/60 rounded-3xl overflow-hidden">
           <div className="stars-layer" />
         </div>
 
@@ -465,7 +465,7 @@ function FloatingScammers() {
                     whileHover={{ scale: 1.05, y: -4 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setSelectedScammer(scammer)}
-                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-white/[0.08] p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
+                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
                   >
                     {/* Avatar + status */}
                     <div className="flex items-center gap-2 mb-3">
@@ -645,7 +645,7 @@ function SearchView() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="glass rounded-2xl p-4 hover:bg-white/10 transition-all duration-300"
+                  className="glass rounded-2xl p-4 hover:bg-muted transition-all duration-300"
                 >
                   <div
                     className="flex items-center justify-between cursor-pointer"
@@ -668,7 +668,7 @@ function SearchView() {
                     </div>
                   </div>
                   {/* Like/Dislike bar */}
-                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-white/10">
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
                     <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
                   </div>
                 </motion.div>
@@ -750,7 +750,7 @@ function Top10View() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => setSelectedScammer(item)}
-              className="glass rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
+              className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300 active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0">
@@ -864,7 +864,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
         onClick={onClose}
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
         <motion.div
           initial={{ y: 300, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -878,7 +878,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               <h3 className="text-xl font-bold">Сообщить о скаме</h3>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors shrink-0"
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -891,7 +891,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   placeholder="Введите имя..."
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-12 rounded-xl bg-white/5 border-white/10"
+                  className="h-12 rounded-xl bg-secondary border-border"
                 />
               </div>
 
@@ -901,7 +901,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   placeholder="Цифровой ID в Telegram..."
                   value={telegramUserId}
                   onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
-                  className="h-12 rounded-xl bg-white/5 border-white/10"
+                  className="h-12 rounded-xl bg-secondary border-border"
                 />
               </div>
 
@@ -935,7 +935,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   placeholder="Телефон, Telegram, детали..."
                   value={data}
                   onChange={(e) => setData(e.target.value)}
-                  className="h-12 rounded-xl bg-white/5 border-white/10"
+                  className="h-12 rounded-xl bg-secondary border-border"
                 />
               </div>
 
@@ -947,7 +947,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   placeholder="https://t.me/..."
                   value={screenshotText}
                   onChange={(e) => setScreenshotText(e.target.value)}
-                  className="w-full h-20 rounded-xl bg-white/5 border border-white/10 p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
+                  className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
                   rows={3}
                 />
               </div>
@@ -1063,7 +1063,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
         className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
         onClick={onClose}
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
         <motion.div
           initial={{ y: 300, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -1086,7 +1086,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <StatusBadge status={scammer.statusLabel || scammer.status} size="sm" color={scammer.statusColor} textColor={scammer.statusTextColor} />
                     {scammer.scammerType && (
-                      <Badge variant="outline" className="text-[10px] px-2 py-0 bg-blue-500/20 text-blue-300 border-blue-500/30">
+                      <Badge variant="outline" className="text-[10px] px-2 py-0 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-500/30">
                         {scammer.scammerType === 'bot' ? (
                           <span className="flex items-center gap-1"><Bot className="w-3 h-3" /> Бот</span>
                         ) : (
@@ -1099,7 +1099,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors shrink-0 ml-2"
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ml-2"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1189,7 +1189,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                         href={src}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="glass rounded-xl p-3 text-sm text-blue-400 hover:text-blue-300 hover:bg-white/10 transition-colors flex items-center gap-2 truncate"
+                        className="glass rounded-xl p-3 text-sm text-blue-400 hover:text-blue-300 hover:bg-muted transition-colors flex items-center gap-2 truncate"
                       >
                         <LinkIcon className="w-4 h-4 shrink-0" />
                         <span className="truncate">{src.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
@@ -1199,7 +1199,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                         key={i}
                         src={src}
                         alt={`Screenshot ${i + 1}`}
-                        className="w-full rounded-xl border border-white/10"
+                        className="w-full rounded-xl border border-border"
                       />
                     )
                   })}
@@ -1224,7 +1224,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendComment()}
-                    className="h-10 rounded-xl bg-white/5 border-white/10 text-sm flex-1 min-w-0"
+                    className="h-10 rounded-xl bg-secondary border-border text-sm flex-1 min-w-0"
                     maxLength={500}
                   />
                   <Button
@@ -1258,7 +1258,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-6 w-6 shrink-0">
-                              <AvatarFallback className="bg-blue-500/30 text-blue-300 text-[10px] font-bold">
+                              <AvatarFallback className="bg-blue-500/20 dark:bg-blue-500/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold">
                                 {comment.user.username.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
@@ -1293,7 +1293,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     <button
                       onClick={() => setCommentPage(p => Math.max(1, p - 1))}
                       disabled={commentPage <= 1}
-                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -1301,7 +1301,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     <button
                       onClick={() => setCommentPage(p => Math.min(commentTotalPages, p + 1))}
                       disabled={commentPage >= commentTotalPages}
-                      className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -1392,10 +1392,10 @@ function ProfileView({ user }: { user: any }) {
   }
 
   const statusColor: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    approved: 'bg-green-500/20 text-green-400 border-green-500/30',
-    rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
-    revision: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    pending: 'bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30',
+    approved: 'bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/30',
+    rejected: 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30',
+    revision: 'bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/30',
   }
 
   if (!user) {
@@ -1507,7 +1507,7 @@ function ProfileView({ user }: { user: any }) {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDelete(sub)}
-                      className="text-xs h-8 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      className="text-xs h-8 rounded-lg text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10"
                     >
                       <Trash2 className="w-3 h-3 mr-1" />
                       Удалить
@@ -1531,7 +1531,7 @@ function ProfileView({ user }: { user: any }) {
       {/* Logout */}
       <button
         onClick={() => signOut()}
-        className="w-full mt-4 py-3 rounded-2xl border border-white/10 text-muted-foreground hover:text-red-400 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+        className="w-full mt-4 py-3 rounded-2xl border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
       >
         <LogOut className="w-4 h-4" />
         Выйти
@@ -1590,7 +1590,7 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('like') }}
         className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition-all ${
-          myVote === 'like' ? 'text-green-400 bg-green-500/20' : 'text-muted-foreground hover:text-green-400 hover:bg-green-500/10'
+          myVote === 'like' ? 'text-green-600 dark:text-green-400 bg-green-500/10 dark:bg-green-500/20' : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-400 hover:bg-green-500/10'
         } ${loading ? 'opacity-50' : ''}`}
       >
         <ThumbsUp className={iconSz} />
@@ -1599,7 +1599,7 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('dislike') }}
         className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition-all ${
-          myVote === 'dislike' ? 'text-red-400 bg-red-500/20' : 'text-muted-foreground hover:text-red-400 hover:bg-red-500/10'
+          myVote === 'dislike' ? 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' : 'text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10'
         } ${loading ? 'opacity-50' : ''}`}
       >
         <ThumbsDown className={iconSz} />
@@ -1623,7 +1623,7 @@ function StatusBadge({ status, size = 'md', color, textColor }: { status: string
     boxShadow: '0 0 8px rgba(239,68,68,0.25), 0 0 16px rgba(239,68,68,0.12)',
   }
 
-  const fallbackClasses = !color ? 'bg-red-500/20 text-red-400 border-red-500/30' : ''
+  const fallbackClasses = !color ? 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30' : ''
 
   return (
     <span
@@ -1668,7 +1668,7 @@ function BottomNav() {
                   onClick={() => setCreateModalOpen(true)}
                   className="relative -mt-5"
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 hover:shadow-xl transition-all duration-300 ring-1 ring-white/20 ring-inset">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl transition-all duration-300 ring-1 ring-white/20 dark:ring-white/20 ring-inset">
                     <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
                   </div>
                 </motion.button>
