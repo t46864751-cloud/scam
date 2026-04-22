@@ -428,7 +428,6 @@ export default function PanelPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-green-400">
-      <div className="gradient-bg" />
 
       {/* Sidebar + Content */}
       <div className="relative z-10 flex min-h-screen">

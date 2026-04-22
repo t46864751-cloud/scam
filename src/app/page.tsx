@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
-import { useTheme } from 'next-themes'
 import { useAppStore } from '@/store/app'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -16,8 +15,6 @@ import {
   LogIn,
   Eye,
   EyeOff,
-  Sun,
-  Moon,
   Send,
   X,
   ChevronRight,
@@ -39,7 +36,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 // ==================== TYPES ====================
@@ -132,7 +128,6 @@ function AuthView() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="gradient-bg" />
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1341,7 +1336,6 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
 
 // ==================== PROFILE VIEW ====================
 function ProfileView({ user }: { user: any }) {
-  const { theme, setTheme } = useTheme()
   const [showAuth, setShowAuth] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -1456,20 +1450,6 @@ function ProfileView({ user }: { user: any }) {
               {(user as any).role === 'admin' ? '🛡️ Админ' : '👤 Пользователь'}
             </Badge>
           </div>
-        </div>
-      </div>
-
-      {/* Theme toggle */}
-      <div className="glass rounded-2xl p-4 mb-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            {theme === 'dark' ? <Moon className="w-5 h-5 text-blue-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
-            <span className="font-medium text-sm sm:text-base">Тема: {theme === 'dark' ? 'Тёмная' : 'Светлая'}</span>
-          </div>
-          <Switch
-            checked={theme === 'dark'}
-            onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-          />
         </div>
       </div>
 
@@ -1752,7 +1732,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative">
-      <div className="gradient-bg" />
       <main className="relative z-10 max-w-lg mx-auto pb-28 min-h-screen">
         <AnimatePresence mode="wait">
           {activeTab === 'search' && <SearchView key="search" />}

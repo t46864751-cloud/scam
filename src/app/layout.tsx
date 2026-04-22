@@ -32,8 +32,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
+        <div className="gradient-bg" />
         <Providers>
-          {children}
+          <div className="relative z-10">
+            {children}
+          </div>
           <Toaster position="top-center" richColors />
         </Providers>
       </body>
