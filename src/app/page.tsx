@@ -32,6 +32,8 @@ import {
   UserIcon,
   CalendarDays,
   ChevronLeft,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1116,6 +1118,16 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   </div>
                 </div>
               </div>
+              <CopyButton
+                text={() => {
+                  let text = `${scammer.name} - ${scammer.statusLabel || scammer.status}! Описание: ${scammer.description || 'Нет описания'}.`
+                  if (scammer.telegramUserId) {
+                    text += ` Айди: ${scammer.telegramUserId}`
+                  }
+                  return text
+                }}
+                label="Скопировать"
+              />
               <button
                 onClick={onClose}
                 className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ml-2"
@@ -1172,10 +1184,11 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
               <div className="mb-4">
                 <div className="glass rounded-xl p-3 flex items-center gap-2">
                   <UserIcon className="w-4 h-4 text-blue-400 shrink-0" />
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground">Telegram ID</p>
                     <p className="text-sm font-medium">{scammer.telegramUserId}</p>
                   </div>
+                  <CopyButton text={scammer.telegramUserId} label="ID" />
                 </div>
               </div>
             )}
@@ -1623,6 +1636,37 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
         <span className={numSz}>{dislikes}</span>
       </button>
     </div>
+  )
+}
+
+// ==================== COPY BUTTON ====================
+function CopyButton({ text, label }: { text: string | (() => string); label?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    const value = typeof text === 'function' ? text() : text
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      toast.success('Скопировано!')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Не удалось скопировать')
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="w-8 h-8 rounded-full bg-muted/60 hover:bg-secondary flex items-center justify-center transition-colors shrink-0"
+      title={copied ? 'Скопировано!' : label || 'Скопировать'}
+    >
+      {copied ? (
+        <Check className="w-3.5 h-3.5 text-green-400" />
+      ) : (
+        <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+      )}
+    </button>
   )
 }
 
