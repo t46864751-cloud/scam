@@ -1,9 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // One-time migration: create ScammerStatus table + seed defaults + add telegramUserId to Submission
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
+    // Auth check — only admins can run migrations
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+    }
+    const userRole = (session.user as { role?: string }).role
+    if (userRole !== 'admin') {
+      return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
+    }
     // 0. Add telegramUserId column to Submission table if not exists
     try {
       await db.$executeRawUnsafe(`

@@ -2,14 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { rateLimit } from '@/lib/rate-limit'
 
 const registerSchema = z.object({
   username: z.string().min(3).max(30),
-  password: z.string().min(6).max(100),
+  password: z.string()
+    .min(8, 'Пароль должен быть минимум 8 символов')
+    .max(100, 'Пароль слишком длинный')
+    .regex(/[a-zA-Z]/, 'Пароль должен содержать хотя бы одну букву')
+    .regex(/[0-9]/, 'Пароль должен содержать хотя бы одну цифру'),
 })
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit registration by IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const { allowed } = rateLimit(`register:${ip}`)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток регистрации. Подождите минуту.' },
+        { status: 429 }
+      )
+    }
+
     const body = await req.json()
     const { username, password } = registerSchema.parse(body)
 

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'gFgtqc'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,26 +11,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
     }
 
+    const adminPass = process.env.ADMIN_PASSWORD
+    if (!adminPass) {
+      console.error('ADMIN_PASSWORD is not set in environment')
+      return NextResponse.json({ error: 'Сервер не настроен' }, { status: 500 })
+    }
+
+    // Rate limit admin password attempts by session user ID
+    const sessionUser = session.user as { userId?: string; id?: string }
+    const userId = sessionUser.userId || sessionUser.id
+    const { allowed } = rateLimit(`admin-pass:${userId || 'unknown'}`)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Слишком много попыток. Подождите минуту.' },
+        { status: 429 }
+      )
+    }
+
     const { password } = await req.json()
 
     const inputPass = String(password || '').trim()
-    const adminPass = String(ADMIN_PASS || '').trim()
 
-    if (!inputPass || inputPass !== adminPass) {
+    if (!inputPass || inputPass !== adminPass.trim()) {
       return NextResponse.json({ error: 'Неверный пароль' }, { status: 403 })
     }
 
     // Get user ID from session - try both userId and id
-    const sessionUser = session.user as { userId?: string; id?: string }
-    const userId = sessionUser.userId || sessionUser.id
+    const finalUserId = userId
 
-    if (!userId) {
+    if (!finalUserId) {
       return NextResponse.json({ error: 'Ошибка сессии' }, { status: 400 })
     }
 
     // Update role in DB
     const updatedUser = await db.user.update({
-      where: { id: userId },
+      where: { id: finalUserId },
       data: { role: 'admin' },
       select: { id: true, username: true, role: true },
     })

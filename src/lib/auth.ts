@@ -2,6 +2,7 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { db } from './db'
+import { rateLimit } from './rate-limit'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,6 +15,12 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           return null
+        }
+
+        // Rate limit by IP (passed via credential field or fallback to username)
+        const { allowed } = rateLimit(`login:${credentials.username}`)
+        if (!allowed) {
+          throw new Error('Слишком много попыток. Подождите минуту.')
         }
 
         try {
