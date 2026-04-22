@@ -1,68 +1,21 @@
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Build ScamBase - Full-stack scammer database service
-
-Work Log:
-- Initialized Next.js 16 project with fullstack dev environment
-- Created .env.local and .env with Neon PostgreSQL URL, NextAuth secret, Vercel Blob token, admin password
-- Designed and pushed Prisma schema to Neon PostgreSQL (User, Scammer, Submission, SearchLog models)
-- Installed bcryptjs, @vercel/blob for auth and file uploads
-- Built NextAuth.js authentication with JWT strategy and role-based access (user/admin)
-- Created auth registration API with bcrypt password hashing and Zod validation
-- Built file upload API with Vercel Blob integration (max 3 files, JPG/PNG/WebP, 5MB each)
-- Created search API with scammer lookup by name (case-insensitive), search logging, and search count incrementing
-- Built Top-10 API with weekly search aggregation via raw SQL
-- Created submission API (POST to create, GET to list user's submissions, PUT for revision/resubmit/delete)
-- Built admin panel registration API (password-based admin role assignment)
-- Created admin panel scammers CRUD API (GET all, POST create, PUT update, DELETE)
-- Built admin panel submissions management API (GET all, PUT approve/reject/send-for-revision)
-- Created admin stats API (aggregated counts)
-- Built Zustand store for client-side state management
-- Created Providers component (SessionProvider + ThemeProvider)
-- Designed custom CSS with glassmorphism, animated gradient backgrounds, glow effects, custom scrollbars, status pulse animations
-- Built complete main page as client-side SPA with:
-  - Auth view (login/register with animated UI)
-  - Search view (hero search with gradient border, results with status badges)
-  - Top-10 view (ranked list with medal icons, weekly search counts)
-  - Profile view (theme toggle, submission status management, admin access link, logout)
-  - Create modal (spring animation, file previews, upload to blob)
-  - Scammer detail modal (screenshots, stats, status)
-  - TikTok-style bottom navigation (rounded glass, floating plus button with gradient)
-- Built admin panel register page (/panel/register) with password verification
-- Built admin panel dashboard (/panel) with:
-  - Terminal-style sidebar with green-on-dark theme
-  - Dashboard with stats cards and system log
-  - Scammers management (list, edit modal with status/search count controls, delete)
-  - Submissions moderation (approve, reject, send for revision with reason)
-  - Add new scammer form (name, description, status selection, screenshot upload)
-  - Mobile-responsive layout with tab switching
-- Added security middleware with rate limiting (100 req/min per IP) and security headers
-- Updated next.config.ts with security headers and Vercel Blob image domain
-- All code passes ESLint
-
-Stage Summary:
-- Complete ScamBase application built with Next.js 16, Neon PostgreSQL, Vercel Blob, NextAuth.js
-- Glassmorphism UI with dark/light theme, animated backgrounds, smooth transitions
-- TikTok-style bottom navigation with search, top-10, create submission, profile tabs
-- Full admin panel with terminal aesthetic, CRUD operations, and submission moderation
-- Security: rate limiting, CSRF/XSS headers, bcrypt password hashing, role-based access, input validation with Zod
-
----
-Task ID: 1
 Agent: Main
-Task: Fix telegramUserId visibility in cards and create form + fix \n\r description rendering
+Task: Security fixes for scam project - vulnerabilities 1, 2, 4, 5, 6, 7
 
 Work Log:
-- Added `telegramUserId` to search API results mapping (`src/app/api/search/route.ts`)
-- Added `telegramUserId` to random-scammers API raw SQL select and results mapping (`src/app/api/random-scammers/route.ts`)
-- Added `telegramUserId` input field to `CreateModal` component in `src/app/page.tsx` with digit-only validation
-- Updated submit API (`src/app/api/submit/route.ts`) to accept and process `telegramUserId`
-- Created migration endpoint `/api/migrate` to clean `\r\n` in descriptions and populate telegramUserId from SQL data
-- Deployed to `scam-steel.vercel.app`
-- Ran migration: 27 descriptions cleaned, telegramUserIds already populated from prior session
+- Analyzed project for security vulnerabilities using subagent
+- Fixed vulnerability 1: Removed hardcoded admin password fallback 'gFgtqc' from panel/register/route.ts. Now ADMIN_PASSWORD is required from env, returns 500 if not set.
+- Fixed vulnerability 2: Added admin auth check to /api/migrate/route.ts and /api/seed-statuses/route.ts. Both endpoints now require admin session.
+- Fixed vulnerability 4: Confirmed .env*.local in .gitignore. Removed .env from git tracking (git rm --cached). Cleaned up duplicate .vercel entry in .gitignore.
+- Fixed vulnerability 5: Created src/middleware.ts with JWT-based admin role check for all /api/panel/* and /panel/* routes.
+- Fixed vulnerability 6: Changed password policy in auth/register/route.ts: min 8 chars (was 6), requires at least one letter and one digit.
+- Fixed vulnerability 7: Created src/lib/rate-limit.ts with in-memory rate limiter. Added rate limiting to: login (auth.ts authorize), registration (register/route.ts), admin password (panel/register/route.ts). Max 10 attempts per minute per key.
+- Committed all changes and pushed to GitHub.
+- Attempted deployment via Vercel CLI - all builds fail with "The Deployment was blocked because GitHub could not associate the committer with a GitHub user" - Vercel can't link GitHub user t46864751-cloud to Vercel user t46864751-7462.
 
 Stage Summary:
-- Telegram ID now visible in scammer cards (detail modal)
-- Telegram ID field now available in the report/submit form
-- Descriptions no longer show literal \n\r tags (27 records cleaned in DB + cleanDesc function in all APIs)
+- All 6 security fixes implemented and committed
+- GitHub push successful: https://github.com/t46864751-cloud/scam
+- Vercel deployment blocked due to GitHub committer not matching Vercel team member
+- User needs to either: link GitHub account to Vercel, or disable Git integration on Vercel, or deploy manually from Vercel dashboard
