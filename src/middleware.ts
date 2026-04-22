@@ -4,9 +4,24 @@ import { getToken } from 'next-auth/jwt'
 // Paths that require admin role
 const ADMIN_API_PATHS = ['/api/panel/']
 const ADMIN_PAGE_PATHS = ['/panel']
+// Public paths under /panel that don't require admin
+const PANEL_PUBLIC_PATHS = ['/panel/register']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Skip protection for public panel paths (e.g. /panel/register)
+  if (PANEL_PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    // But still check if already admin — redirect to panel
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    })
+    if (token?.role === 'admin') {
+      return NextResponse.redirect(new URL('/panel', request.url))
+    }
+    return NextResponse.next()
+  }
 
   // Check if path requires admin protection
   const isProtectedApi = ADMIN_API_PATHS.some((p) => pathname.startsWith(p))
