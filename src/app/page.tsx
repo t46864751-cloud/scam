@@ -1541,6 +1541,17 @@ function ProfileView({ user }: { user: any }) {
         )}
       </div>
 
+      {/* Admin panel button */}
+      {(user as any).role === 'admin' && (
+        <a
+          href="/panel"
+          className="flex items-center justify-center gap-2 w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold transition-all"
+        >
+          <Shield className="w-4 h-4" />
+          Админ-панель
+        </a>
+      )}
+
       {/* Logout */}
       <button
         onClick={() => signOut()}
