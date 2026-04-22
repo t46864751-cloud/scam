@@ -605,6 +605,17 @@ function SearchView() {
       </div>
 
       <div className="relative max-w-lg mx-auto mb-6">
+        {/* Floating magnifying glasses background */}
+        <div className="absolute -top-32 -bottom-8 -left-8 -right-8 overflow-hidden pointer-events-none">
+          <Search className="absolute top-4 left-[8%] w-8 h-8 text-blue-500/[0.06] rotate-[-20deg]" />
+          <Search className="absolute top-12 right-[12%] w-6 h-6 text-cyan-500/[0.08] rotate-[15deg]" />
+          <Search className="absolute top-24 left-[20%] w-10 h-10 text-blue-400/[0.05] rotate-[35deg]" />
+          <Search className="absolute bottom-8 right-[6%] w-7 h-7 text-purple-500/[0.07] rotate-[-40deg]" />
+          <Search className="absolute bottom-16 left-[5%] w-5 h-5 text-cyan-400/[0.06] rotate-[25deg]" />
+          <Search className="absolute top-[60%] left-[45%] w-9 h-9 text-blue-300/[0.04] rotate-[-10deg]" />
+          <Search className="absolute top-[30%] right-[35%] w-6 h-6 text-indigo-500/[0.06] rotate-[50deg]" />
+        </div>
+
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl opacity-30 group-focus-within:opacity-60 blur transition-opacity" />
           <div className="relative flex flex-col gap-2 p-1.5">
@@ -1130,7 +1141,9 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   <div className="glass rounded-xl p-3 flex items-center gap-2">
                     <CalendarDays className="w-4 h-4 text-blue-400 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Дата скама</p>
+                      <p className="text-xs text-muted-foreground">
+                        {scammer.status === 'verified' ? 'Дата' : 'Дата скама'}
+                      </p>
                       <p className="text-sm font-medium">{scammer.scamDate}</p>
                     </div>
                   </div>

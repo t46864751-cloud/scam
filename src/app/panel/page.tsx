@@ -61,6 +61,11 @@ interface Stats {
   totalSearches: number
   scamCount: number
   verifiedCount: number
+  searchesToday: number
+  likesToday: number
+  scammersAddedToday: number
+  scammersUpdatedToday: number
+  dbChangesToday: number
 }
 
 type PanelTab = 'dashboard' | 'scammers' | 'submissions' | 'add' | 'statuses'
@@ -540,12 +545,12 @@ export default function PanelPage() {
                     <p className="text-sm text-green-600 font-mono mt-1">{'// '}Обзор системы</p>
                   </div>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     {[
                       { label: 'Скамеров', value: stats?.totalScammers || 0, icon: Users, color: 'text-red-400' },
                       { label: 'Заявок', value: stats?.totalSubmissions || 0, icon: FileText, color: 'text-yellow-400' },
                       { label: 'Пользователей', value: stats?.totalUsers || 0, icon: Shield, color: 'text-blue-400' },
-                      { label: 'Поисков', value: stats?.totalSearches || 0, icon: Search, color: 'text-purple-400' },
+                      { label: 'Поисков (всего)', value: stats?.totalSearches || 0, icon: Search, color: 'text-purple-400' },
                     ].map((s, i) => (
                       <motion.div
                         key={s.label}
@@ -563,16 +568,33 @@ export default function PanelPage() {
                     ))}
                   </div>
 
-                  {stats?.pendingSubmissions && stats.pendingSubmissions > 0 && (
-                    <div className="glass rounded-xl p-4 border border-yellow-500/20 mb-6">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                        <span className="font-mono text-yellow-400">
-                          {stats.pendingSubmissions} заявок ожидают проверки
-                        </span>
-                      </div>
+                  {/* Today stats */}
+                  <div className="mb-6">
+                    <p className="text-xs font-mono text-green-600 mb-3">{'// '}Статистика за сегодня</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { label: 'Поисков', value: stats?.searchesToday || 0, icon: Search, color: 'text-cyan-400' },
+                        { label: 'Лайков', value: stats?.likesToday || 0, icon: TrendingUp, color: 'text-green-400' },
+                        { label: 'Изменений БД', value: stats?.dbChangesToday || 0, icon: Database, color: 'text-orange-400', sub: `+${stats?.scammersAddedToday || 0} / ~${stats?.scammersUpdatedToday || 0}` },
+                        { label: 'Заявок на ревью', value: stats?.pendingSubmissions || 0, icon: AlertTriangle, color: 'text-yellow-400' },
+                      ].map((s, i) => (
+                        <motion.div
+                          key={s.label}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: (i + 4) * 0.05 }}
+                          className="glass rounded-xl p-4 border border-green-500/10"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <s.icon className={`w-4 h-4 ${s.color}`} />
+                            <span className="text-xs font-mono text-green-600">{s.label}</span>
+                          </div>
+                          <p className="text-2xl font-bold font-mono text-green-300">{s.value}</p>
+                          {s.sub && <p className="text-[10px] font-mono text-green-600/60 mt-1">{s.sub}</p>}
+                        </motion.div>
+                      ))}
                     </div>
-                  )}
+                  </div>
 
                   {/* Terminal-style log */}
                   <div className="glass rounded-xl p-4 border border-green-500/10 font-mono text-xs">
@@ -583,9 +605,11 @@ export default function PanelPage() {
                     <div className="space-y-1 text-green-600/80">
                       <p>{'>'} ScamBase Admin Panel initialized</p>
                       <p>{'>'} Connected to database: OK</p>
-                      <p>{'>'} Scamers in DB: {stats?.totalScammers || 0}</p>
-                      <p>{'>'} Pending reviews: {stats?.pendingSubmissions || 0}</p>
-                      <p>{'>'} SCAM detected: {stats?.scamCount || 0} | Verified clean: {stats?.verifiedCount || 0}</p>
+                      <p>{'>'} Scamers in DB: {stats?.totalScammers || 0} | Users: {stats?.totalUsers || 0}</p>
+                      <p>{'>'} Total searches: {stats?.totalSearches || 0} | Today: {stats?.searchesToday || 0}</p>
+                      <p>{'>'} SCAM: {stats?.scamCount || 0} | Verified: {stats?.verifiedCount || 0}</p>
+                      <p>{'>'} DB changes today: +{stats?.scammersAddedToday || 0} added, ~{stats?.scammersUpdatedToday || 0} updated</p>
+                      <p>{'>'} Likes today: {stats?.likesToday || 0}</p>
                       <p className="text-green-400">{'>'} Ready for commands_</p>
                     </div>
                   </div>
