@@ -68,7 +68,7 @@ interface Stats {
   dbChangesToday: number
 }
 
-type PanelTab = 'dashboard' | 'scammers' | 'submissions' | 'comments' | 'complaints' | 'add' | 'statuses'
+type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'add' | 'statuses'
 
 export default function PanelPage() {
   const { data: session, status } = useSession()
@@ -115,6 +115,18 @@ export default function PanelPage() {
   // Complaints
   const [complaints, setComplaints] = useState<any[]>([])
   const [complaintsLoading, setComplaintsLoading] = useState(false)
+
+  // Users management
+  const [users, setUsers] = useState<any[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersTotalPages, setUsersTotalPages] = useState(1)
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [usersSearch, setUsersSearch] = useState('')
+  const [usersSearchInput, setUsersSearchInput] = useState('')
+  const [usersRoleFilter, setUsersRoleFilter] = useState('all')
+  const [banModalUser, setBanModalUser] = useState<any>(null)
+  const [banReason, setBanReason] = useState('')
 
   // Revision
   const [revisionSub, setRevisionSub] = useState<Submission | null>(null)
@@ -285,6 +297,28 @@ export default function PanelPage() {
       .catch(() => toast.error('Ошибка загрузки жалоб'))
       .finally(() => setComplaintsLoading(false))
   }, [tab, isAdminChecked])
+
+  // Load users when tab is active
+  const loadUsers = useCallback(async (page: number, search: string, role: string) => {
+    setUsersLoading(true)
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '20' })
+      if (search) params.set('search', search)
+      if (role && role !== 'all') params.set('role', role)
+      const res = await fetch(`/api/panel/users?${params}`)
+      if (res.status === 403) { toast.error('Доступ запрещен'); return }
+      const data = await res.json()
+      setUsers(data.results || [])
+      setUsersTotal(data.total || 0)
+      setUsersTotalPages(data.totalPages || 1)
+    } catch { toast.error('Ошибка загрузки юзеров') }
+    finally { setUsersLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    if (tab !== 'users' || !isAdminChecked) return
+    loadUsers(1, usersSearch, usersRoleFilter)
+  }, [tab, isAdminChecked, usersSearch, usersRoleFilter, loadUsers])
 
   if (status === 'loading' || !isAdminChecked) {
     return (
@@ -482,6 +516,36 @@ export default function PanelPage() {
     } catch { toast.error('Ошибка') }
   }
 
+  const handleBanUser = async (userId: string, reason: string) => {
+    try {
+      const res = await fetch('/api/panel/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, action: 'ban', reason }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      setBanModalUser(null)
+      setBanReason('')
+      loadUsers(usersPage, usersSearch, usersRoleFilter)
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      const res = await fetch('/api/panel/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, action: 'unban' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      loadUsers(usersPage, usersSearch, usersRoleFilter)
+    } catch { toast.error('Ошибка') }
+  }
+
   const startEdit = (scammer: Scammer) => {
     setEditScammer(scammer)
     setEditName(scammer.name)
@@ -546,6 +610,7 @@ export default function PanelPage() {
             {[
               { id: 'dashboard' as const, icon: Activity, label: 'Дашборд' },
               { id: 'scammers' as const, icon: Database, label: 'Скамеры' },
+              { id: 'users' as const, icon: Users, label: 'Юзеры' },
               { id: 'submissions' as const, icon: FileText, label: 'Заявки' },
               { id: 'comments' as const, icon: MessageSquare, label: 'Комментарии' },
               { id: 'complaints' as const, icon: AlertTriangle, label: 'Жалобы' },
@@ -607,6 +672,7 @@ export default function PanelPage() {
             {[
               { id: 'dashboard' as const, label: 'Дашборд' },
               { id: 'scammers' as const, label: 'Скамеры' },
+              { id: 'users' as const, label: 'Юзеры' },
               { id: 'submissions' as const, label: 'Заявки' },
               { id: 'comments' as const, label: 'Комменты' },
               { id: 'complaints' as const, label: 'Жалобы' },
@@ -835,6 +901,154 @@ export default function PanelPage() {
                         </button>
                       </div>
                     )}
+                    </>
+                  )}
+                </motion.div>
+              )}
+
+              {tab === 'users' && (
+                <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Юзеры</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Управление аккаунтами ({usersTotal} всего)</p>
+                  </div>
+
+                  {/* Search and filter */}
+                  <div className="glass rounded-xl p-4 border border-green-500/10 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Поиск по имени..."
+                          value={usersSearchInput}
+                          onChange={(e) => setUsersSearchInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setUsersSearch(usersSearchInput.trim())
+                              setUsersPage(1)
+                            }
+                          }}
+                          className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <select
+                          value={usersRoleFilter}
+                          onChange={(e) => { setUsersRoleFilter(e.target.value); setUsersPage(1) }}
+                          className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono text-sm px-3 cursor-pointer"
+                        >
+                          <option value="all">Все роли</option>
+                          <option value="user">Юзеры</option>
+                          <option value="admin">Админы</option>
+                          <option value="banned">Забаненные</option>
+                        </select>
+                        <Button
+                          onClick={() => { setUsersSearch(usersSearchInput.trim()); setUsersPage(1) }}
+                          className="h-10 bg-green-500/20 text-green-400 hover:bg-green-500/30 font-mono rounded-lg px-3"
+                        >
+                          <Search className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {usersLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="glass rounded-xl p-8 border border-green-500/10 text-center">
+                      <p className="font-mono text-green-600">Юзеры не найдены.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        {users.map((u: any, i: number) => (
+                          <motion.div
+                            key={u.id}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.02 }}
+                            className={`glass rounded-xl p-4 border ${u.role === 'banned' ? 'border-red-500/20' : u.role === 'admin' ? 'border-green-500/20' : 'border-green-500/10'}`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                  u.role === 'admin' ? 'bg-green-500/20' : u.role === 'banned' ? 'bg-red-500/20' : 'bg-blue-500/20'
+                                }`}>
+                                  <span className={`font-bold text-sm ${
+                                    u.role === 'admin' ? 'text-green-400' : u.role === 'banned' ? 'text-red-400' : 'text-blue-400'
+                                  }`}>{u.username.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-mono font-semibold text-sm truncate">{u.username}</p>
+                                    {u.role === 'admin' ? (
+                                      <span className="text-[10px] px-2 py-0 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-mono">Админ</span>
+                                    ) : u.role === 'banned' ? (
+                                      <span className="text-[10px] px-2 py-0 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-mono">Бан</span>
+                                    ) : (
+                                      <span className="text-[10px] px-2 py-0 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono">Юзер</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[10px] text-green-600 font-mono mt-0.5">
+                                    <span>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</span>
+                                    <span>{u.submissionsCount} заявок</span>
+                                    <span>{u.commentsCount} комм.</span>
+                                    <span>{u.searchesCount} поисков</span>
+                                  </div>
+                                  {u.role === 'banned' && u.banReason && (
+                                    <p className="text-[10px] text-red-400/80 font-mono mt-0.5">Причина: {u.banReason}</p>
+                                  )}
+                                </div>
+                              </div>
+                              {u.role !== 'admin' && (
+                                <div className="flex gap-2 shrink-0">
+                                  {u.role === 'banned' ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleUnbanUser(u.id)}
+                                      className="h-8 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
+                                    >
+                                      Разбанить
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => { setBanModalUser(u); setBanReason('') }}
+                                      className="h-8 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
+                                    >
+                                      Забанить
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {usersTotalPages > 1 && (
+                        <div className="flex items-center justify-center gap-3 mt-6">
+                          <button
+                            onClick={() => { setUsersPage(p => Math.max(1, p - 1)); loadUsers(Math.max(1, usersPage - 1), usersSearch, usersRoleFilter) }}
+                            disabled={usersPage <= 1}
+                            className="p-2 rounded-lg hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronLeft className="w-4 h-4 text-green-400" />
+                          </button>
+                          <span className="text-sm text-green-400 font-mono">
+                            {usersPage} / {usersTotalPages}
+                          </span>
+                          <button
+                            onClick={() => { setUsersPage(p => Math.min(usersTotalPages, p + 1)); loadUsers(Math.min(usersTotalPages, usersPage + 1), usersSearch, usersRoleFilter) }}
+                            disabled={usersPage >= usersTotalPages}
+                            className="p-2 rounded-lg hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronRight className="w-4 h-4 text-green-400" />
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
                 </motion.div>
@@ -1487,6 +1701,51 @@ export default function PanelPage() {
                 className="w-full h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg"
               >
                 Отправить на доработку
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Ban User Modal */}
+      <AnimatePresence>
+        {banModalUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setBanModalUser(null)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-md glass rounded-2xl p-6 border border-red-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-mono font-bold text-red-300">Забанить {banModalUser.username}</h3>
+                <button onClick={() => setBanModalUser(null)} className="p-1 rounded hover:bg-red-500/10">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-sm text-green-600 font-mono mb-3">Укажите причину бана:</p>
+              <Textarea
+                placeholder="Причина бана..."
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                className="rounded-lg bg-red-500/5 border-red-500/20 text-red-200 font-mono min-h-[80px] mb-4"
+              />
+
+              <Button
+                onClick={() => handleBanUser(banModalUser.id, banReason)}
+                disabled={!banReason.trim()}
+                className="w-full h-10 bg-red-600 hover:bg-red-700 text-white font-mono rounded-lg"
+              >
+                Забанить
               </Button>
             </motion.div>
           </motion.div>

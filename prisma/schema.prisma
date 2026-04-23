@@ -12,6 +12,7 @@ model User {
   username  String   @unique
   password  String
   role      String   @default("user")
+  banReason String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
