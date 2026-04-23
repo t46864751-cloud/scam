@@ -19,7 +19,7 @@ export async function GET() {
     }
 
     const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0, 0)
+    todayStart.setHours(0, 0, 0, 0)
 
     const [
       totalScammers,
@@ -33,7 +33,6 @@ export async function GET() {
       likesToday,
       scammersAddedToday,
       scammersUpdatedToday,
-      scammersDeletedToday,
     ] = await Promise.all([
       db.scammer.count(),
       db.submission.count(),

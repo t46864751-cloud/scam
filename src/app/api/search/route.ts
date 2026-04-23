@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     // Build where clause: search by name AND/OR telegramUserId
     // Strip @ from query for fuzzy matching
-    const cleanQuery = query.replace(/^@/i, '')
+    const cleanQuery = (query || '').replace(/^@/i, '')
     const conditions: any[] = []
     if (cleanQuery) {
       conditions.push({ name: { contains: cleanQuery, mode: 'insensitive' } })
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
     if (scammerIds.length > 0) {
       const counts = await db.submission.groupBy({
         by: ['scammerId'],
-        where: { scammerId: { in: scammerIds }, scammerId: { not: null } },
+        where: { scammerId: { in: scammerIds, not: null } },
         _count: { id: true },
       })
       submissionCounts = new Map(counts.map((sc) => [sc.scammerId!, sc._count.id]))

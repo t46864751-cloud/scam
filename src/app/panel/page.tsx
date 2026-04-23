@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,6 +10,7 @@ import {
   Plus, Trash2, Edit3, CheckCircle, XCircle, RotateCcw,
   Loader2, Eye, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
+  Gamepad2, Play, Pause,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,7 +69,301 @@ interface Stats {
   dbChangesToday: number
 }
 
-type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'add' | 'statuses'
+type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'stats' | 'add' | 'statuses'
+
+// ==================== PING PONG GAME ====================
+function PingPongGame() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [score, setScore] = useState({ player: 0, bot: 0 })
+  const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle')
+  const gameStateRef = useRef<'idle' | 'playing' | 'paused'>('idle')
+  const animFrameRef = useRef<number>(0)
+  const gameRef = useRef({
+    ball: { x: 0, y: 0, vx: 0, vy: 0, r: 6 },
+    player: { x: 0, y: 0, w: 10, h: 60 },
+    bot: { x: 0, y: 0, w: 10, h: 60 },
+    score: { player: 0, bot: 0 },
+    W: 0, H: 0,
+    touchY: null as number | null,
+    particles: [] as { x: number; y: number; vx: number; vy: number; life: number; color: string }[],
+    trail: [] as { x: number; y: number; alpha: number }[],
+  })
+
+  const resetBall = useCallback((dir: number) => {
+    const g = gameRef.current
+    g.ball.x = g.W / 2
+    g.ball.y = g.H / 2
+    const speed = Math.min(3.5 + g.score.player + g.score.bot * 0.2, 7)
+    const angle = Math.random() * 0.8 - 0.4
+    g.ball.vx = speed * dir * Math.cos(angle)
+    g.ball.vy = speed * Math.sin(angle)
+  }, [])
+
+  const initGame = useCallback(() => {
+    const canvas = canvasRef.current
+    const container = containerRef.current
+    if (!canvas || !container) return
+    const rect = container.getBoundingClientRect()
+    const W = rect.width
+    const H = Math.min(400, Math.max(280, rect.width * 0.55))
+    canvas.width = W * 2
+    canvas.height = H * 2
+    canvas.style.width = W + 'px'
+    canvas.style.height = H + 'px'
+    const ctx = canvas.getContext('2d')
+    if (ctx) ctx.scale(2, 2)
+    const g = gameRef.current
+    g.W = W; g.H = H
+    g.player.x = 12; g.player.y = H / 2 - 30
+    g.bot.x = W - 22; g.bot.y = H / 2 - 30
+    g.score = { player: 0, bot: 0 }
+    g.particles = []; g.trail = []
+    resetBall(Math.random() < 0.5 ? 1 : -1)
+  }, [resetBall])
+
+  const startGame = useCallback(() => {
+    initGame()
+    gameStateRef.current = 'playing'
+    setGameState('playing')
+    setScore({ player: 0, bot: 0 })
+  }, [initGame])
+
+  const togglePause = useCallback(() => {
+    if (gameStateRef.current === 'playing') {
+      gameStateRef.current = 'paused'
+      setGameState('paused')
+    } else if (gameStateRef.current === 'paused') {
+      gameStateRef.current = 'playing'
+      setGameState('playing')
+    }
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const loop = () => {
+      const g = gameRef.current
+      if (gameStateRef.current === 'playing') {
+        const W = g.W; const H = g.H
+        const ball = g.ball; const player = g.player; const bot = g.bot
+
+        ball.x += ball.vx; ball.y += ball.vy
+
+        g.trail.push({ x: ball.x, y: ball.y, alpha: 1 })
+        if (g.trail.length > 12) g.trail.shift()
+        g.trail.forEach(t => t.alpha *= 0.85)
+
+        if (ball.y - ball.r <= 0) { ball.y = ball.r; ball.vy = Math.abs(ball.vy) }
+        if (ball.y + ball.r >= H) { ball.y = H - ball.r; ball.vy = -Math.abs(ball.vy) }
+
+        if (ball.x - ball.r <= player.x + player.w && ball.x + ball.r >= player.x && ball.y >= player.y && ball.y <= player.y + player.h && ball.vx < 0) {
+          ball.vx = Math.abs(ball.vx) * 1.03
+          const hit = (ball.y - (player.y + player.h / 2)) / (player.h / 2)
+          ball.vy = hit * 4
+          ball.x = player.x + player.w + ball.r
+          for (let i = 0; i < 6; i++) g.particles.push({ x: ball.x, y: ball.y, vx: Math.random() * 3, vy: (Math.random() - 0.5) * 4, life: 1, color: '#4ade80' })
+        }
+
+        if (ball.x + ball.r >= bot.x && ball.x - ball.r <= bot.x + bot.w && ball.y >= bot.y && ball.y <= bot.y + bot.h && ball.vx > 0) {
+          ball.vx = -Math.abs(ball.vx) * 1.03
+          const hit = (ball.y - (bot.y + bot.h / 2)) / (bot.h / 2)
+          ball.vy = hit * 4
+          ball.x = bot.x - ball.r
+          for (let i = 0; i < 6; i++) g.particles.push({ x: ball.x, y: ball.y, vx: -Math.random() * 3, vy: (Math.random() - 0.5) * 4, life: 1, color: '#ef4444' })
+        }
+
+        const botCenter = bot.y + bot.h / 2
+        const diff = ball.y - botCenter
+        const botSpeed = Math.min(3 + g.score.bot * 0.15, 4.5)
+        if (Math.abs(diff) > 8) bot.y += Math.sign(diff) * Math.min(Math.abs(diff), botSpeed)
+        bot.y = Math.max(0, Math.min(H - bot.h, bot.y))
+
+        if (g.touchY !== null) player.y = Math.max(0, Math.min(H - player.h, g.touchY - player.h / 2))
+
+        if (ball.x < -10) {
+          g.score.bot++; setScore({ ...g.score })
+          for (let i = 0; i < 10; i++) g.particles.push({ x: 20, y: ball.y, vx: Math.random() * 5, vy: (Math.random() - 0.5) * 6, life: 1, color: '#ef4444' })
+          if (g.score.bot >= 10) { gameStateRef.current = 'idle'; setGameState('idle'); return }
+          resetBall(1)
+        }
+        if (ball.x > W + 10) {
+          g.score.player++; setScore({ ...g.score })
+          for (let i = 0; i < 10; i++) g.particles.push({ x: W - 20, y: ball.y, vx: -Math.random() * 5, vy: (Math.random() - 0.5) * 6, life: 1, color: '#4ade80' })
+          if (g.score.player >= 10) { gameStateRef.current = 'idle'; setGameState('idle'); return }
+          resetBall(-1)
+        }
+
+        g.particles = g.particles.filter(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; p.vy += 0.1; return p.life > 0 })
+      }
+
+      const W = g.W; const H = g.H
+      ctx.clearRect(0, 0, W, H)
+      ctx.fillStyle = 'rgba(5, 10, 5, 0.95)'
+      ctx.fillRect(0, 0, W, H)
+
+      ctx.setLineDash([6, 8])
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.15)'
+      ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke()
+      ctx.setLineDash([])
+
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.08)'
+      ctx.lineWidth = 1
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, 40, 0, Math.PI * 2); ctx.stroke()
+
+      g.trail.forEach((t) => {
+        ctx.beginPath(); ctx.arc(t.x, t.y, g.ball.r * t.alpha * 0.8, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(74, 222, 128, ${t.alpha * 0.3})`; ctx.fill()
+      })
+
+      g.particles.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2)
+        ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0')
+        ctx.fill()
+      })
+
+      const grad1 = ctx.createLinearGradient(g.player.x, 0, g.player.x + g.player.w, 0)
+      grad1.addColorStop(0, '#22c55e'); grad1.addColorStop(1, '#4ade80')
+      ctx.fillStyle = grad1
+      ctx.beginPath(); ctx.roundRect(g.player.x, g.player.y, g.player.w, g.player.h, 5); ctx.fill()
+      ctx.shadowColor = '#22c55e'; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0
+
+      const grad2 = ctx.createLinearGradient(g.bot.x, 0, g.bot.x + g.bot.w, 0)
+      grad2.addColorStop(0, '#f87171'); grad2.addColorStop(1, '#ef4444')
+      ctx.fillStyle = grad2
+      ctx.beginPath(); ctx.roundRect(g.bot.x, g.bot.y, g.bot.w, g.bot.h, 5); ctx.fill()
+      ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0
+
+      const ballGrad = ctx.createRadialGradient(g.ball.x, g.ball.y, 0, g.ball.x, g.ball.y, g.ball.r * 2)
+      ballGrad.addColorStop(0, '#ffffff'); ballGrad.addColorStop(0.5, '#4ade80'); ballGrad.addColorStop(1, 'rgba(74, 222, 128, 0)')
+      ctx.fillStyle = ballGrad
+      ctx.beginPath(); ctx.arc(g.ball.x, g.ball.y, g.ball.r * 2, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath(); ctx.arc(g.ball.x, g.ball.y, g.ball.r, 0, Math.PI * 2); ctx.fill()
+
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.4)'
+      ctx.font = 'bold 48px monospace'; ctx.textAlign = 'center'
+      ctx.fillText(String(g.score.player), W / 2 - 40, 55)
+      ctx.fillStyle = 'rgba(248, 113, 113, 0.4)'
+      ctx.fillText(String(g.score.bot), W / 2 + 40, 55)
+
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.3)'; ctx.font = '10px monospace'
+      ctx.fillText('ВЫ', W / 2 - 40, 70)
+      ctx.fillStyle = 'rgba(248, 113, 113, 0.3)'
+      ctx.fillText('БОТ', W / 2 + 40, 70)
+
+      const winner = g.score.player >= 10 ? 'ВЫ ПОБЕДИЛИ!' : g.score.bot >= 10 ? 'БОТ ПОБЕДИЛ' : null
+      if (gameStateRef.current === 'idle' && winner) {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H)
+        ctx.fillStyle = g.score.player >= 10 ? '#4ade80' : '#ef4444'
+        ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'
+        ctx.fillText(winner, W / 2, H / 2 - 10)
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '12px monospace'
+        ctx.fillText('Нажмите "Играть" для новой партии', W / 2, H / 2 + 20)
+      }
+
+      animFrameRef.current = requestAnimationFrame(loop)
+    }
+    animFrameRef.current = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(animFrameRef.current)
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const handleMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      gameRef.current.touchY = ((e.clientY - rect.top) / rect.height) * gameRef.current.H
+    }
+    const handleTouch = (e: TouchEvent) => {
+      e.preventDefault()
+      const rect = canvas.getBoundingClientRect()
+      const touch = e.touches[0]
+      gameRef.current.touchY = ((touch.clientY - rect.top) / rect.height) * gameRef.current.H
+    }
+    const handleLeave = () => { gameRef.current.touchY = null }
+    const handleTouchEnd = () => { gameRef.current.touchY = null }
+
+    canvas.addEventListener('mousemove', handleMove)
+    canvas.addEventListener('mouseleave', handleLeave)
+    canvas.addEventListener('touchmove', handleTouch, { passive: false })
+    canvas.addEventListener('touchend', handleTouchEnd)
+
+    return () => {
+      canvas.removeEventListener('mousemove', handleMove)
+      canvas.removeEventListener('mouseleave', handleLeave)
+      canvas.removeEventListener('touchmove', handleTouch)
+      canvas.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [])
+
+  const winner = score.player >= 10 ? 'ВЫ ПОБЕДИЛИ!' : score.bot >= 10 ? 'БОТ ПОБЕДИЛ' : null
+
+  return (
+    <div className="glass rounded-2xl p-4 border border-green-500/10">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Gamepad2 className="w-4 h-4 text-green-400" />
+          <span className="font-mono text-sm text-green-300">Пинг-Понг</span>
+          <span className="text-[10px] font-mono text-green-600">vs Bot</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {gameState === 'playing' || gameState === 'paused' ? (
+            <Button onClick={togglePause} variant="outline" size="sm" className="rounded-lg gap-1 border-green-500/20 text-green-400 hover:bg-green-500/10 font-mono text-xs">
+              {gameState === 'paused' ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+              {gameState === 'paused' ? 'Играть' : 'Пауза'}
+            </Button>
+          ) : null}
+          {(gameState === 'playing' || gameState === 'paused' || winner) && (
+            <Button onClick={startGame} variant="outline" size="sm" className="rounded-lg gap-1 border-green-500/20 text-green-400 hover:bg-green-500/10 font-mono text-xs">
+              <RotateCcw className="w-3 h-3" />
+              Заново
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center gap-6 mb-3 font-mono text-sm">
+        <div className="text-center">
+          <p className="text-green-500 font-bold text-lg">{score.player}</p>
+          <p className="text-[10px] text-green-600">ВЫ</p>
+        </div>
+        <span className="text-green-600/50">:</span>
+        <div className="text-center">
+          <p className="text-red-400 font-bold text-lg">{score.bot}</p>
+          <p className="text-[10px] text-green-600">БОТ</p>
+        </div>
+      </div>
+
+      <div ref={containerRef} className="relative w-full">
+        <canvas
+          ref={canvasRef}
+          className="w-full rounded-xl border border-green-500/10 touch-none cursor-none"
+        />
+        {gameState === 'idle' && !winner && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 backdrop-blur-sm">
+            <div className="text-center">
+              <Gamepad2 className="w-10 h-10 mx-auto mb-3 text-green-400" />
+              <p className="text-lg font-bold text-green-300 mb-1 font-mono">Пинг-Понг</p>
+              <p className="text-xs text-green-600 mb-4">Мышка / палец для управления</p>
+              <Button onClick={startGame} className="rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-300 font-semibold px-6 border border-green-500/30 font-mono">
+                <Play className="w-4 h-4 mr-2" />
+                Играть
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="text-[10px] text-green-600/50 text-center mt-2 font-mono">До 10 очков • Управление: мышь / палец</p>
+    </div>
+  )
+}
 
 export default function PanelPage() {
   const { data: session, status } = useSession()
@@ -138,6 +433,10 @@ export default function PanelPage() {
   const [newStatusKey, setNewStatusKey] = useState('')
   const [newStatusColor, setNewStatusColor] = useState('#6b7280')
   const [newStatusTextColor, setNewStatusTextColor] = useState('#ffffff')
+
+  // Top 10 stats
+  const [top10Data, setTop10Data] = useState<any[]>([])
+  const [top10Loading, setTop10Loading] = useState(false)
 
   const loadScammers = useCallback(async (page: number, search: string) => {
     try {
@@ -319,6 +618,17 @@ export default function PanelPage() {
     if (tab !== 'users' || !isAdminChecked) return
     loadUsers(1, usersSearch, usersRoleFilter)
   }, [tab, isAdminChecked, usersSearch, usersRoleFilter, loadUsers])
+
+  // Load top10 when stats tab is active
+  useEffect(() => {
+    if (tab !== 'stats' || !isAdminChecked) return
+    setTop10Loading(true)
+    fetch('/api/top10')
+      .then(r => r.json())
+      .then(d => setTop10Data(d.results || []))
+      .catch(() => toast.error('Ошибка загрузки статистики'))
+      .finally(() => setTop10Loading(false))
+  }, [tab, isAdminChecked])
 
   if (status === 'loading' || !isAdminChecked) {
     return (
@@ -614,6 +924,7 @@ export default function PanelPage() {
               { id: 'submissions' as const, icon: FileText, label: 'Заявки' },
               { id: 'comments' as const, icon: MessageSquare, label: 'Комментарии' },
               { id: 'complaints' as const, icon: AlertTriangle, label: 'Жалобы' },
+              { id: 'stats' as const, icon: TrendingUp, label: 'Статистика' },
               { id: 'add' as const, icon: Plus, label: 'Добавить' },
               { id: 'statuses' as const, icon: Tag, label: 'Типы статусов' },
             ].map((item) => {
@@ -676,6 +987,7 @@ export default function PanelPage() {
               { id: 'submissions' as const, label: 'Заявки' },
               { id: 'comments' as const, label: 'Комменты' },
               { id: 'complaints' as const, label: 'Жалобы' },
+              { id: 'stats' as const, label: 'Стат.' },
               { id: 'add' as const, label: 'Добавить' },
               { id: 'statuses' as const, label: 'Статусы' },
             ].map((t) => (
@@ -704,17 +1016,48 @@ export default function PanelPage() {
             <AnimatePresence mode="wait">
               {tab === 'dashboard' && (
                 <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Дашборд</h2>
-                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Обзор системы</p>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Панель администратора</p>
                   </div>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  {/* Quick stats row */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                     {[
                       { label: 'Скамеров', value: stats?.totalScammers || 0, icon: Users, color: 'text-red-400' },
-                      { label: 'Заявок', value: stats?.totalSubmissions || 0, icon: FileText, color: 'text-yellow-400' },
-                      { label: 'Пользователей', value: stats?.totalUsers || 0, icon: Shield, color: 'text-blue-400' },
-                      { label: 'Поисков (всего)', value: stats?.totalSearches || 0, icon: Search, color: 'text-purple-400' },
+                      { label: 'Заявок', value: stats?.pendingSubmissions || 0, icon: FileText, color: 'text-yellow-400' },
+                      { label: 'Юзеров', value: stats?.totalUsers || 0, icon: Shield, color: 'text-blue-400' },
+                      { label: 'Поисков сегодня', value: stats?.searchesToday || 0, icon: Search, color: 'text-purple-400' },
+                    ].map((s, i) => (
+                      <div key={s.label} className="glass rounded-xl p-3 border border-green-500/10">
+                        <div className="flex items-center gap-2 mb-1">
+                          <s.icon className={`w-4 h-4 ${s.color}`} />
+                          <span className="text-[10px] font-mono text-green-600">{s.label}</span>
+                        </div>
+                        <p className="text-xl font-bold font-mono text-green-300">{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Ping Pong Game */}
+                  <PingPongGame />
+                </motion.div>
+              )}
+
+              {tab === 'stats' && (
+                <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Статистика</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Подробная статистика системы</p>
+                  </div>
+
+                  {/* Overview stats */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {[
+                      { label: 'Всего скамеров', value: stats?.totalScammers || 0, icon: Users, color: 'text-red-400' },
+                      { label: 'Всего заявок', value: stats?.totalSubmissions || 0, icon: FileText, color: 'text-yellow-400' },
+                      { label: 'Всего юзеров', value: stats?.totalUsers || 0, icon: Shield, color: 'text-blue-400' },
+                      { label: 'Всего поисков', value: stats?.totalSearches || 0, icon: Search, color: 'text-purple-400' },
                     ].map((s, i) => (
                       <motion.div
                         key={s.label}
@@ -761,7 +1104,7 @@ export default function PanelPage() {
                   </div>
 
                   {/* Terminal-style log */}
-                  <div className="glass rounded-xl p-4 border border-green-500/10 font-mono text-xs">
+                  <div className="glass rounded-xl p-4 border border-green-500/10 font-mono text-xs mb-6">
                     <div className="flex items-center gap-2 mb-3 text-green-600">
                       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                       system.log
@@ -776,6 +1119,36 @@ export default function PanelPage() {
                       <p>{'>'} Likes today: {stats?.likesToday || 0}</p>
                       <p className="text-green-400">{'>'} Ready for commands_</p>
                     </div>
+                  </div>
+
+                  {/* Top 10 */}
+                  <div>
+                    <p className="text-xs font-mono text-green-600 mb-3">{'// '}Топ-10 по поискам</p>
+                    {top10Loading ? (
+                      <div className="flex items-center justify-center py-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                      </div>
+                    ) : top10Data.length === 0 ? (
+                      <div className="glass rounded-xl p-6 border border-green-500/10 text-center">
+                        <p className="font-mono text-green-600 text-sm">Нет данных</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {top10Data.map((item: any, i: number) => (
+                          <div key={item.id || i} className="glass rounded-xl p-3 border border-green-500/10 flex items-center gap-3">
+                            <span className="font-mono text-green-500 font-bold w-6 text-center">#{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-mono text-green-300 text-sm font-semibold truncate">{item.name}</p>
+                              <p className="text-[10px] font-mono text-green-600">
+                                {item.searchCount} поисков
+                                {item.likeCount !== undefined && ` | ❤️ ${item.likeCount}`}
+                              </p>
+                            </div>
+                            <span className="text-xs font-mono text-green-500">{item.searchCount}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
