@@ -77,6 +77,7 @@ model Comment {
   content   String
   scammerId String
   userId    String
+  approved  Boolean  @default(false) // false = pending moderation
   createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id])
@@ -104,5 +105,13 @@ model ScammerStatus {
   textColor String   @default("#ffffff") // badge text color (hex)
   sortOrder Int      @default(0)
   isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Complaint {
+  id        String   @id @default(cuid())
+  name      String   // Name that was searched
+  reason    String   @default("") // Optional complaint description
+  status    String   @default("pending") // "pending", "resolved", "dismissed"
   createdAt DateTime @default(now())
 }

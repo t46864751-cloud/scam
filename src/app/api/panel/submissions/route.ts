@@ -84,6 +84,16 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Не указаны данные' }, { status: 400 })
     }
 
+    // Handle delete action
+    if (status === 'delete') {
+      const submission = await db.submission.findUnique({ where: { id } })
+      if (!submission) {
+        return NextResponse.json({ error: 'Заявка не найдена' }, { status: 404 })
+      }
+      await db.submission.delete({ where: { id } })
+      return NextResponse.json({ message: 'Заявка удалена' })
+    }
+
     const validStatuses = ['approved', 'rejected', 'revision']
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Неверный статус' }, { status: 400 })

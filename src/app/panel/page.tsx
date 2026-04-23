@@ -9,7 +9,7 @@ import {
   Shield, Search, Users, FileText, TrendingUp, AlertTriangle,
   Plus, Trash2, Edit3, CheckCircle, XCircle, RotateCcw,
   Loader2, Eye, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
-  Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag,
+  Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,7 +68,7 @@ interface Stats {
   dbChangesToday: number
 }
 
-type PanelTab = 'dashboard' | 'scammers' | 'submissions' | 'add' | 'statuses'
+type PanelTab = 'dashboard' | 'scammers' | 'submissions' | 'comments' | 'complaints' | 'add' | 'statuses'
 
 export default function PanelPage() {
   const { data: session, status } = useSession()
@@ -107,6 +107,14 @@ export default function PanelPage() {
   const [editScamDate, setEditScamDate] = useState('')
   const [editProofLink, setEditProofLink] = useState('')
   const [editTelegramUserId, setEditTelegramUserId] = useState('')
+
+  // Comments moderation
+  const [comments, setComments] = useState<any[]>([])
+  const [commentsLoading, setCommentsLoading] = useState(false)
+
+  // Complaints
+  const [complaints, setComplaints] = useState<any[]>([])
+  const [complaintsLoading, setComplaintsLoading] = useState(false)
 
   // Revision
   const [revisionSub, setRevisionSub] = useState<Submission | null>(null)
@@ -256,6 +264,28 @@ export default function PanelPage() {
     }
   }, [status, session, router, loadData, isAdminChecked])
 
+  // Load comments when tab is active
+  useEffect(() => {
+    if (tab !== 'comments' || !isAdminChecked) return
+    setCommentsLoading(true)
+    fetch('/api/panel/comments')
+      .then(r => r.json())
+      .then(d => setComments(d.results || []))
+      .catch(() => toast.error('Ошибка загрузки комментариев'))
+      .finally(() => setCommentsLoading(false))
+  }, [tab, isAdminChecked])
+
+  // Load complaints when tab is active
+  useEffect(() => {
+    if (tab !== 'complaints' || !isAdminChecked) return
+    setComplaintsLoading(true)
+    fetch('/api/panel/complaints')
+      .then(r => r.json())
+      .then(d => setComplaints(d.results || []))
+      .catch(() => toast.error('Ошибка загрузки жалоб'))
+      .finally(() => setComplaintsLoading(false))
+  }, [tab, isAdminChecked])
+
   if (status === 'loading' || !isAdminChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
@@ -388,6 +418,70 @@ export default function PanelPage() {
     }
   }
 
+  const handleCommentAction = async (id: string, action: string) => {
+    try {
+      const res = await fetch('/api/panel/comments', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      // Reload comments
+      fetch('/api/panel/comments').then(r => r.json()).then(d => setComments(d.results || []))
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleDeleteComment = async (id: string) => {
+    try {
+      const res = await fetch(`/api/panel/comments?id=${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      fetch('/api/panel/comments').then(r => r.json()).then(d => setComments(d.results || []))
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleComplaintAction = async (id: string, action: string) => {
+    try {
+      const res = await fetch('/api/panel/complaints', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: action }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      fetch('/api/panel/complaints').then(r => r.json()).then(d => setComplaints(d.results || []))
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleDeleteComplaint = async (id: string) => {
+    try {
+      const res = await fetch(`/api/panel/complaints?id=${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      fetch('/api/panel/complaints').then(r => r.json()).then(d => setComplaints(d.results || []))
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleDeleteSubmission = async (id: string) => {
+    if (!confirm('Удалить эту заявку?')) return
+    try {
+      const res = await fetch('/api/panel/submissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'delete' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      loadData()
+    } catch { toast.error('Ошибка') }
+  }
+
   const startEdit = (scammer: Scammer) => {
     setEditScammer(scammer)
     setEditName(scammer.name)
@@ -453,6 +547,8 @@ export default function PanelPage() {
               { id: 'dashboard' as const, icon: Activity, label: 'Дашборд' },
               { id: 'scammers' as const, icon: Database, label: 'Скамеры' },
               { id: 'submissions' as const, icon: FileText, label: 'Заявки' },
+              { id: 'comments' as const, icon: MessageSquare, label: 'Комментарии' },
+              { id: 'complaints' as const, icon: AlertTriangle, label: 'Жалобы' },
               { id: 'add' as const, icon: Plus, label: 'Добавить' },
               { id: 'statuses' as const, icon: Tag, label: 'Типы статусов' },
             ].map((item) => {
@@ -512,6 +608,8 @@ export default function PanelPage() {
               { id: 'dashboard' as const, label: 'Дашборд' },
               { id: 'scammers' as const, label: 'Скамеры' },
               { id: 'submissions' as const, label: 'Заявки' },
+              { id: 'comments' as const, label: 'Комменты' },
+              { id: 'complaints' as const, label: 'Жалобы' },
               { id: 'add' as const, label: 'Добавить' },
               { id: 'statuses' as const, label: 'Статусы' },
             ].map((t) => (
@@ -837,6 +935,182 @@ export default function PanelPage() {
                                 </Button>
                               </div>
                             )}
+
+                            {(sub.status === 'approved' || sub.status === 'rejected' || sub.status === 'revision') && (
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDeleteSubmission(sub.id)}
+                                  className="h-7 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-mono text-[10px] rounded-lg px-2"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Удалить
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {tab === 'comments' && (
+                <motion.div key="comments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Комментарии</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Модерация комментариев ({comments.length} записей)</p>
+                  </div>
+
+                  {commentsLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <div className="glass rounded-xl p-8 border border-green-500/10 text-center">
+                      <p className="font-mono text-green-600">Нет комментариев.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {comments.map((c: any, i: number) => (
+                        <motion.div
+                          key={c.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03 }}
+                          className={`glass rounded-xl p-4 border ${c.approved ? 'border-green-500/10' : 'border-yellow-500/30'}`}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-semibold text-sm">{c.user?.username || 'Неизвестный'}</span>
+                                <span className="text-[10px] text-green-600 font-mono">
+                                  на <span className="text-green-400">{c.scammer?.name || '—'}</span>
+                                </span>
+                                {c.approved ? (
+                                  <span className="text-[10px] px-2 py-0 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-mono">Опубликован</span>
+                                ) : (
+                                  <span className="text-[10px] px-2 py-0 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 font-mono">На проверке</span>
+                                )}
+                                {c.user?.role === 'banned' && (
+                                  <span className="text-[10px] px-2 py-0 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-mono">Забанен</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-green-600 font-mono">
+                                {new Date(c.createdAt).toLocaleDateString('ru-RU')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-green-100/80 font-mono bg-green-500/5 rounded-lg p-2">{c.content}</p>
+                            <div className="flex gap-2 flex-wrap justify-end">
+                              {!c.approved && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCommentAction(c.id, 'approve')}
+                                  className="h-7 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Опубликовать
+                                </Button>
+                              )}
+                              {!c.approved && c.user?.role !== 'banned' && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => { if (confirm(`Забанить ${c.user?.username}?`)) handleCommentAction(c.id, 'ban') }}
+                                  className="h-7 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  Забанить
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                onClick={() => handleDeleteComment(c.id)}
+                                className="h-7 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-mono text-[10px] rounded-lg"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Удалить
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {tab === 'complaints' && (
+                <motion.div key="complaints" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Жалобы</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Жалобы без регистрации ({complaints.length} записей)</p>
+                  </div>
+
+                  {complaintsLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                    </div>
+                  ) : complaints.length === 0 ? (
+                    <div className="glass rounded-xl p-8 border border-green-500/10 text-center">
+                      <p className="font-mono text-green-600">Нет жалоб.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {complaints.map((c: any, i: number) => (
+                        <motion.div
+                          key={c.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03 }}
+                          className={`glass rounded-xl p-4 border ${c.status === 'pending' ? 'border-orange-500/20' : 'border-green-500/10'}`}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-mono font-semibold">{c.name}</p>
+                                <p className="text-xs text-green-600 font-mono">{new Date(c.createdAt).toLocaleDateString('ru-RU')}</p>
+                              </div>
+                              {c.status === 'pending' ? (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-mono">Ожидает</span>
+                              ) : c.status === 'resolved' ? (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-mono">Решена</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-gray-500/20 text-gray-400 border border-gray-500/30 font-mono">Отклонена</span>
+                              )}
+                            </div>
+                            {c.reason && (
+                              <p className="text-sm text-green-500/80 font-mono bg-green-500/5 rounded-lg p-2">{c.reason}</p>
+                            )}
+                            <div className="flex gap-2 flex-wrap justify-end">
+                              {c.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleComplaintAction(c.id, 'resolved')}
+                                    className="h-7 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Решена
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleComplaintAction(c.id, 'dismissed')}
+                                    className="h-7 bg-gray-600 hover:bg-gray-700 text-white font-mono text-[10px] rounded-lg"
+                                  >
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Отклонить
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                onClick={() => handleDeleteComplaint(c.id)}
+                                className="h-7 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-mono text-[10px] rounded-lg"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Удалить
+                              </Button>
+                            </div>
                           </div>
                         </motion.div>
                       ))}

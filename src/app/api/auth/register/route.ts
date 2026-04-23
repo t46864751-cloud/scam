@@ -55,8 +55,10 @@ export async function POST(req: NextRequest) {
     )
   } catch (error: any) {
     if (error instanceof z.ZodError) {
+      const messages = error.errors.map(e => e.message)
+      const firstMessage = messages[0] || 'Неверные данные'
       return NextResponse.json(
-        { error: 'Неверные данные', details: error.errors },
+        { error: firstMessage, details: error.errors },
         { status: 400 }
       )
     }

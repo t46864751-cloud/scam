@@ -448,6 +448,12 @@ function FloatingScammers() {
                 msOverflowStyle: 'none',
                 WebkitOverflowScrolling: 'touch',
               }}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.preventDefault()
+                  e.currentTarget.scrollLeft += e.deltaY
+                }
+              }}
             >
               {scammers.map((scammer, i) => (
                 <motion.div
@@ -542,6 +548,85 @@ function FloatingScammers() {
         }
       `}</style>
     </motion.div>
+  )
+}
+
+// ==================== COMPLAINT CARD ====================
+function ComplaintCard({ name }: { name: string }) {
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleSubmit = async () => {
+    if (sent) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, reason: reason.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error)
+        return
+      }
+      toast.success('Жалоба отправлена! Админ рассмотрит её')
+      setSent(true)
+    } catch {
+      toast.error('Ошибка отправки')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="glass rounded-2xl p-4 max-w-sm mx-auto">
+        <div className="text-center">
+          <p className="text-sm font-medium text-muted-foreground">
+            Жалоба на <span className="text-foreground font-semibold">{name}</span> отправлена
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="glass rounded-2xl p-4 max-w-sm mx-auto">
+      <div className="flex items-center gap-3 mb-3">
+        <Avatar className="h-10 w-10 shrink-0">
+          <AvatarFallback className="bg-gradient-to-br from-gray-400 to-gray-500 text-white font-semibold">
+            {name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{name}</p>
+          <p className="text-xs text-muted-foreground">Не найден в базе</p>
+        </div>
+      </div>
+      <div className="mb-3">
+        <textarea
+          placeholder="Опишите причину жалобы (необязательно)..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
+          maxLength={500}
+        />
+      </div>
+      <Button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="w-full h-10 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm"
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Пожаловаться
+          </span>
+        )}
+      </Button>
+    </div>
   )
 }
 
@@ -705,6 +790,18 @@ function SearchView() {
                 </motion.div>
                 <p className="text-lg font-semibold text-green-400">Чисто!</p>
                 <p className="text-sm text-muted-foreground mt-1">Этого человека нет в базе</p>
+                {(query.trim() || telegramId.trim()) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-6"
+                  >
+                    <ComplaintCard
+                      name={query.trim() || telegramId.trim()}
+                    />
+                  </motion.div>
+                )}
               </div>
             )}
           </motion.div>

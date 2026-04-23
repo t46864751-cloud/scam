@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 
 const RATE_LIMIT_MS = 2 * 60 * 1000 // 2 minutes
 
-// GET: everyone can read comments (guests included)
+// GET: everyone can read APPROVED comments only (guests included)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const [comments, total] = await Promise.all([
       db.comment.findMany({
-        where: { scammerId },
+        where: { scammerId, approved: true },
         include: {
           user: {
             select: { id: true, username: true },
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-      db.comment.count({ where: { scammerId } }),
+      db.comment.count({ where: { scammerId, approved: true } }),
     ])
 
     const results = comments.map((c) => ({
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: auth required, rate limited to 1 comment per 2 minutes per user
+// POST: auth required, rate limited, comment goes to moderation (approved: false)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -62,11 +62,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
     }
 
-    const sessionUser = session.user as { userId?: string; id?: string }
+    const sessionUser = session.user as { userId?: string; id?: string; role?: string; banned?: boolean }
     const userId = sessionUser.userId || sessionUser.id
 
     if (!userId) {
       return NextResponse.json({ error: 'Ошибка сессии' }, { status: 401 })
+    }
+
+    // Check if user is banned
+    const user = await db.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 })
+    }
+    if (user.role === 'banned') {
+      return NextResponse.json({ error: 'Вы заблокированы и не можете писать комментарии' }, { status: 403 })
     }
 
     // Rate limit: check last comment by this user
@@ -106,11 +115,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Скамер не найден' }, { status: 404 })
     }
 
+    // Create comment as pending (approved: false)
     const comment = await db.comment.create({
       data: {
         content: content.trim(),
         scammerId,
         userId,
+        approved: false,
       },
       include: {
         user: {
@@ -119,6 +130,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Return success but tell user it's sent (will show after moderation)
     return NextResponse.json(
       { id: comment.id, content: comment.content, createdAt: comment.createdAt, user: comment.user },
       { status: 201 }
@@ -129,7 +141,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE: auth required
+// DELETE: auth required (owner or admin)
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

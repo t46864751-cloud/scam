@@ -32,9 +32,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Build where clause: search by name AND/OR telegramUserId
+    // Strip @ from query for fuzzy matching
+    const cleanQuery = query.replace(/^@/i, '')
     const conditions: any[] = []
-    if (query) {
-      conditions.push({ name: { contains: query, mode: 'insensitive' } })
+    if (cleanQuery) {
+      conditions.push({ name: { contains: cleanQuery, mode: 'insensitive' } })
     }
     if (telegramId) {
       conditions.push({ telegramUserId: { contains: telegramId } })
