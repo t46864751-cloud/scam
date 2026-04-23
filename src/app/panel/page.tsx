@@ -176,10 +176,17 @@ function PingPongGame() {
           for (let i = 0; i < 6; i++) g.particles.push({ x: ball.x, y: ball.y, vx: -Math.random() * 3, vy: (Math.random() - 0.5) * 4, life: 1, color: '#ef4444' })
         }
 
+        // Bot AI - intentionally dumb, only reacts when ball is on its half
         const botCenter = bot.y + bot.h / 2
         const diff = ball.y - botCenter
-        const botSpeed = Math.min(3 + g.score.bot * 0.15, 4.5)
-        if (Math.abs(diff) > 8) bot.y += Math.sign(diff) * Math.min(Math.abs(diff), botSpeed)
+        const botSpeed = 1.2 + Math.random() * 0.4
+        if (ball.vx > 0 && Math.abs(diff) > 25) {
+          bot.y += Math.sign(diff) * Math.min(Math.abs(diff), botSpeed)
+        }
+        // Add random jitter so bot misses sometimes
+        if (Math.random() < 0.06) {
+          bot.y += (Math.random() - 0.5) * 8
+        }
         bot.y = Math.max(0, Math.min(H - bot.h, bot.y))
 
         if (g.touchY !== null) player.y = Math.max(0, Math.min(H - player.h, g.touchY - player.h / 2))
