@@ -11,6 +11,7 @@ import {
   Loader2, Eye, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,7 +70,7 @@ interface Stats {
   dbChangesToday: number
 }
 
-type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'stats' | 'add' | 'statuses'
+type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'stats' | 'add' | 'statuses' | 'export'
 
 // ==================== PING PONG GAME ====================
 function PingPongGame() {
@@ -369,6 +370,49 @@ function PingPongGame() {
 
       <p className="text-[10px] text-green-600/50 text-center mt-2 font-mono">До 10 очков • Управление: мышь / палец</p>
     </div>
+  )
+}
+
+// ==================== EXPORT BUTTON ====================
+function ExportButton({ type, format, label, ext }: { type: string; format: string; label: string; ext: string }) {
+  const [loading, setLoading] = useState(false)
+
+  const handleExport = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/panel/export?type=${type}&format=${format}`)
+      if (!res.ok) {
+        toast.error('Ошибка экспорта')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `scambase_${type}_${Date.now()}${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success(`${label} скачан`)
+    } catch {
+      toast.error('Ошибка скачивания')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      onClick={handleExport}
+      disabled={loading}
+      variant="outline"
+      size="sm"
+      className="rounded-lg gap-1.5 border-green-500/20 text-green-400 hover:bg-green-500/10 font-mono text-xs"
+    >
+      {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+      {label}
+    </Button>
   )
 }
 
@@ -934,6 +978,7 @@ export default function PanelPage() {
               { id: 'stats' as const, icon: TrendingUp, label: 'Статистика' },
               { id: 'add' as const, icon: Plus, label: 'Добавить' },
               { id: 'statuses' as const, icon: Tag, label: 'Типы статусов' },
+              { id: 'export' as const, icon: Download, label: 'Экспорт' },
             ].map((item) => {
               const Icon = item.icon
               const isActive = tab === item.id
@@ -997,6 +1042,7 @@ export default function PanelPage() {
               { id: 'stats' as const, label: 'Стат.' },
               { id: 'add' as const, label: 'Добавить' },
               { id: 'statuses' as const, label: 'Статусы' },
+              { id: 'export' as const, label: 'Экспорт' },
             ].map((t) => (
               <button
                 key={t.id}
@@ -1927,6 +1973,72 @@ export default function PanelPage() {
                         <Plus className="w-4 h-4 mr-2" />
                         Создать тип
                       </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {tab === 'export' && (
+                <motion.div key="export" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Экспорт базы</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Выгрузка данных в разные форматы</p>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {[
+                      {
+                        type: 'scammers' as const,
+                        title: 'Скамеры',
+                        desc: 'Полная база скамеров с описаниями, статусами, лайками и метаданными',
+                        icon: Database,
+                        count: stats?.totalScammers || 0,
+                      },
+                      {
+                        type: 'users' as const,
+                        title: 'Пользователи',
+                        desc: 'Список всех юзеров с ролями и датами регистрации',
+                        icon: Users,
+                        count: stats?.totalUsers || 0,
+                      },
+                      {
+                        type: 'submissions' as const,
+                        title: 'Заявки',
+                        desc: 'Все заявки на добавление скамеров со статусами',
+                        icon: FileText,
+                        count: stats?.totalSubmissions || 0,
+                      },
+                    ].map((section) => (
+                      <div key={section.type} className="glass rounded-xl p-5 border border-green-500/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                            <section.icon className="w-5 h-5 text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-mono font-semibold text-green-300">{section.title}</h3>
+                            <p className="text-[10px] text-green-600 font-mono">{section.count} записей</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-green-600/80 mb-4">{section.desc}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <ExportButton type={section.type} format="json" label="JSON" ext=".json" />
+                          <ExportButton type={section.type} format="csv" label="CSV (Excel)" ext=".csv" />
+                          <ExportButton type={section.type} format="sql" label="SQL" ext=".sql" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 glass rounded-xl p-4 border border-green-500/10 font-mono text-xs">
+                    <div className="flex items-center gap-2 mb-2 text-green-600">
+                      <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                      info
+                    </div>
+                    <div className="space-y-1 text-green-600/80">
+                      <p>{'>'} JSON — универсальный формат, можно импортировать в любую систему</p>
+                      <p>{'>'} CSV — открывается в Excel, Google Sheets, LibreOffice</p>
+                      <p>{'>'} SQL — INSERT-запросы для PostgreSQL, полезно для бэкапа/миграции</p>
+                      <p>{'>'} Все файлы скачиваются автоматически в браузере</p>
                     </div>
                   </div>
                 </motion.div>
