@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 // ==================== TYPES ====================
 interface ScammerResult {
@@ -1071,6 +1071,11 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
                   rows={3}
                 />
+                <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
+                  Киньте скриншоты на которых показано что вас заскамили (пруфы) в чат{' '}
+                  <a href="https://t.me/wocmf" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-1">@wocmf</a>,{' '}
+                  копируйте ссылку и вставьте сюда.
+                </p>
               </div>
 
               <Button
@@ -1593,6 +1598,9 @@ function ProfileView({ user }: { user: any }) {
   const [showAuth, setShowAuth] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
+  const [avatarUrl, setAvatarUrl] = useState((user as any)?.image || '')
+  const [avatarSaving, setAvatarSaving] = useState(false)
+  const [showAvatarEdit, setShowAvatarEdit] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -1652,6 +1660,28 @@ function ProfileView({ user }: { user: any }) {
     }
   }
 
+  const handleSaveAvatar = async () => {
+    setAvatarSaving(true)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: avatarUrl }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Ошибка')
+        return
+      }
+      toast.success('Аватарка обновлена')
+      setShowAvatarEdit(false)
+    } catch {
+      toast.error('Ошибка')
+    } finally {
+      setAvatarSaving(false)
+    }
+  }
+
   const statusColor: Record<string, string> = {
     pending: 'bg-yellow-500/10 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30',
     approved: 'bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/30',
@@ -1693,19 +1723,75 @@ function ProfileView({ user }: { user: any }) {
       {/* Profile header */}
       <div className="glass rounded-2xl p-5 mb-5">
         <div className="flex items-center gap-4">
-          <Avatar className="h-14 w-14 shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-lg font-bold">
-              {user.name?.charAt(0).toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-14 w-14 shrink-0">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt={user.name} />}
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-lg font-bold">
+                {user.name?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => { setAvatarUrl((user as any)?.image || ''); setShowAvatarEdit(true) }}
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center hover:bg-blue-500/20 transition-colors"
+            >
+              <Edit3 className="w-3 h-3 text-muted-foreground" />
+            </button>
+          </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold truncate">{user.name}</h2>
             <Badge variant="outline" className="mt-1">
-              {(user as any).role === 'admin' ? '🛡️ Админ' : '👤 Пользователь'}
+              {(user as any).role === 'admin' ? 'Админ' : 'Пользователь'}
             </Badge>
           </div>
         </div>
       </div>
+
+      {/* Avatar edit modal */}
+      {showAvatarEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAvatarEdit(false)}>
+          <div className="glass rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Изменить аватарку</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <Avatar className="h-16 w-16">
+                {avatarUrl && <AvatarImage src={avatarUrl} />}
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-xl font-bold">
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">Превью</p>
+                <p className="text-xs text-muted-foreground truncate">{avatarUrl || 'Нет картинки'}</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Ссылка на изображение</label>
+              <Input
+                placeholder="https://example.com/avatar.jpg"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                className="rounded-xl bg-secondary border-border"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Поддерживаются JPG, PNG, GIF, WebP</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveAvatar}
+                disabled={avatarSaving}
+                className="flex-1 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold"
+              >
+                {avatarSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Сохранить'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowAvatarEdit(false)}
+                className="h-10 rounded-xl"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Submissions */}
       <div className="mb-4">

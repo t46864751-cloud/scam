@@ -43,6 +43,7 @@ export const authOptions: NextAuthOptions = {
             name: user.username,
             email: `${user.username}@scambase.local`,
             role: user.role,
+            image: user.image || undefined,
           }
         } catch (error) {
           console.error('Auth authorize error:', error)
@@ -57,16 +58,18 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role
         token.userId = user.id
+        token.image = user.image
       }
       // On session update (e.g. after admin role change), re-read role from DB
       if (trigger === 'update' && token.userId) {
         try {
           const freshUser = await db.user.findUnique({
             where: { id: token.userId as string },
-            select: { role: true },
+            select: { role: true, image: true },
           })
           if (freshUser) {
             token.role = freshUser.role
+            token.image = freshUser.image
           }
         } catch (error) {
           console.error('JWT update error:', error)
@@ -78,6 +81,7 @@ export const authOptions: NextAuthOptions = {
       if (session?.user && token) {
         session.user.role = token.role as string
         session.user.userId = token.userId as string
+        session.user.image = token.image as string
         // Ensure id is set from JWT sub
         session.user.id = token.sub as string
       }
@@ -102,10 +106,12 @@ declare module 'next-auth' {
       email: string
       role: string
       userId: string
+      image?: string
     }
   }
   interface User {
     role: string
+    image?: string
   }
 }
 
@@ -113,5 +119,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role: string
     userId: string
+    image?: string
   }
 }
