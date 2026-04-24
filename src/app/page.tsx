@@ -268,23 +268,36 @@ function AuthModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        className="absolute inset-0"
+        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        transition={{ duration: 0.25 }}
+        style={{ backgroundColor: 'var(--overlay)' }}
+      />
+      <motion.div
+        initial={{ y: 120, opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        exit={{
+          y: 80,
+          opacity: 0,
+          scale: 0.92,
+          filter: 'blur(6px)',
+          transition: { duration: 0.3, ease: [0.36, 0, 0.66, -0.56] }
+        }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-md mx-4 mb-20 sm:mb-0"
       >
-        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
-        <motion.div
-          initial={{ y: 300, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 300, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative z-10 w-full max-w-md mx-4 mb-20 sm:mb-0"
-        >
           <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -370,8 +383,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
             </div>
           </TiltCard>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -1096,23 +1108,36 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   if (!open) return null
 
   return (
-    <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        className="absolute inset-0"
+        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        transition={{ duration: 0.25 }}
+        style={{ backgroundColor: 'var(--overlay)' }}
+      />
+      <motion.div
+        initial={{ y: 120, opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        exit={{
+          y: 80,
+          opacity: 0,
+          scale: 0.92,
+          filter: 'blur(6px)',
+          transition: { duration: 0.3, ease: [0.36, 0, 0.66, -0.56] }
+        }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
       >
-        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
-        <motion.div
-          initial={{ y: 300, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 300, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
-        >
           <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold">Сообщить о скаме</h3>
@@ -1214,8 +1239,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             </div>
           </div>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -1300,23 +1324,36 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
   const isLoggedIn = !!session?.user
 
   return (
-    <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        className="absolute inset-0"
+        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        transition={{ duration: 0.25 }}
+        style={{ backgroundColor: 'var(--overlay)' }}
+      />
+      <motion.div
+        initial={{ y: 120, opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        exit={{
+          y: 80,
+          opacity: 0,
+          scale: 0.92,
+          filter: 'blur(6px)',
+          transition: { duration: 0.3, ease: [0.36, 0, 0.66, -0.56] }
+        }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
       >
-        <div className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm" />
-        <motion.div
-          initial={{ y: 300, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 300, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25 }}
-          onClick={(e) => e.stopPropagation()}
-          className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
-        >
           <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
@@ -1571,8 +1608,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
             )}
           </TiltCard>
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -1800,7 +1836,9 @@ function ProfileView({ user }: { user: any }) {
             Войти / Зарегистрироваться
           </Button>
         </div>
-        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+        <AnimatePresence>
+          {showAuth && <AuthModal key="auth-modal" onClose={() => setShowAuth(false)} />}
+        </AnimatePresence>
       </motion.div>
     )
   }
@@ -2226,8 +2264,12 @@ export default function Home() {
         </AnimatePresence>
       </main>
       <BottomNav />
-      {session?.user && <CreateModal open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />}
-      <ScamerDetailModal scammer={selectedScammer} onClose={() => setSelectedScammer(null)} />
+      <AnimatePresence>
+        {isCreateModalOpen && session?.user && <CreateModal key="create-modal" open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedScammer && <ScamerDetailModal key="detail-modal" scammer={selectedScammer} onClose={() => setSelectedScammer(null)} />}
+      </AnimatePresence>
     </div>
   )
 }
