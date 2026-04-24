@@ -1215,16 +1215,6 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   </div>
                 </div>
               </div>
-              <CopyButton
-                text={() => {
-                  let text = `${scammer.name} - ${scammer.statusLabel || scammer.status}! Описание: ${scammer.description || 'Нет описания'}.`
-                  if (scammer.telegramUserId) {
-                    text += ` Айди: ${scammer.telegramUserId}`
-                  }
-                  return text
-                }}
-                label="Скопировать"
-              />
               <button
                 onClick={onClose}
                 className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ml-2"
@@ -1232,6 +1222,20 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Telegram User ID */}
+            {scammer.telegramUserId && (
+              <div className="mb-4">
+                <div className="glass rounded-xl p-3 flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">Telegram ID</p>
+                    <p className="text-sm font-medium">{scammer.telegramUserId}</p>
+                  </div>
+                  <CopyButton text={scammer.telegramUserId} label="ID" />
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             {scammer.description && (
@@ -1273,20 +1277,6 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Telegram User ID */}
-            {scammer.telegramUserId && (
-              <div className="mb-4">
-                <div className="glass rounded-xl p-3 flex items-center gap-2">
-                  <UserIcon className="w-4 h-4 text-blue-400 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground">Telegram ID</p>
-                    <p className="text-sm font-medium">{scammer.telegramUserId}</p>
-                  </div>
-                  <CopyButton text={scammer.telegramUserId} label="ID" />
-                </div>
               </div>
             )}
 
