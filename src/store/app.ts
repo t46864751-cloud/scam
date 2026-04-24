@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 
-type Tab = 'search' | 'top10' | 'profile'
+type Tab = 'search' | 'top10' | 'stats' | 'profile'
 
 interface AppState {
   activeTab: Tab

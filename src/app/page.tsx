@@ -34,6 +34,9 @@ import {
   ChevronLeft,
   Copy,
   Check,
+  BarChart3,
+  Database,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1447,6 +1450,144 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
   )
 }
 
+// ==================== STATS VIEW ====================
+function StatsView() {
+  const [stats, setStats] = useState<any>(null)
+  const [top10, setTop10] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/stats').then(r => r.json()),
+      fetch('/api/top10').then(r => r.json()),
+    ])
+      .then(([statsData, top10Data]) => {
+        setStats(statsData)
+        setTop10(top10Data.results || [])
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-5"
+    >
+      <div className="pt-6">
+        <h2 className="text-2xl font-bold">Статистика</h2>
+        <p className="text-sm text-muted-foreground mt-1">Общая информация о системе</p>
+      </div>
+
+      {/* Overview */}
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: 'Всего скамеров', value: stats.totalScammers, icon: Shield, color: 'text-red-500' },
+          { label: 'Всего заявок', value: stats.totalSubmissions, icon: FileText, color: 'text-yellow-500' },
+          { label: 'Всего юзеров', value: stats.totalUsers, icon: User, color: 'text-blue-500' },
+          { label: 'Всего поисков', value: stats.totalSearches, icon: Search, color: 'text-purple-500' },
+        ].map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="glass rounded-xl p-4"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <s.icon className={`w-4 h-4 ${s.color}`} />
+              <span className="text-xs text-muted-foreground">{s.label}</span>
+            </div>
+            <p className="text-2xl font-bold">{s.value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Today stats */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-3 font-medium">За сегодня</p>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Поисков', value: stats.searchesToday, icon: Search, color: 'text-cyan-500' },
+            { label: 'Лайков', value: stats.likesToday, icon: TrendingUp, color: 'text-green-500' },
+            { label: 'Новых', value: stats.scammersAddedToday, icon: Database, color: 'text-orange-500' },
+          ].map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (i + 4) * 0.05 }}
+              className="glass rounded-xl p-3 text-center"
+            >
+              <s.icon className={`w-4 h-4 ${s.color} mx-auto mb-1`} />
+              <p className="text-lg font-bold">{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Status breakdown */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-3 font-medium">По статусам</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <span className="text-xs text-muted-foreground">Скам</span>
+            </div>
+            <p className="text-2xl font-bold text-red-500">{stats.scamCount}</p>
+          </div>
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span className="text-xs text-muted-foreground">Проверено</span>
+            </div>
+            <p className="text-2xl font-bold text-green-500">{stats.verifiedCount}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Top 10 */}
+      {top10.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-3 font-medium">Топ-10 по поискам</p>
+          <div className="space-y-2">
+            {top10.map((item: any, i: number) => (
+              <motion.div
+                key={item.id || i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="glass rounded-xl p-3 flex items-center gap-3"
+              >
+                <span className="text-sm font-bold w-6 text-center text-muted-foreground">#{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{item.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{item.searchCount} поисков</p>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground">{item.searchCount}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 // ==================== PROFILE VIEW ====================
 function ProfileView({ user }: { user: any }) {
   const [showAuth, setShowAuth] = useState(false)
@@ -1800,6 +1941,7 @@ function BottomNav() {
     { id: 'search' as const, icon: Search, label: 'Поиск' },
     { id: 'top10' as const, icon: TrendingUp, label: 'Топ-10' },
     ...(isLogged ? [{ id: 'plus' as const, icon: Plus, label: '' }] : []),
+    { id: 'stats' as const, icon: BarChart3, label: 'Стат.' },
     { id: 'profile' as const, icon: User, label: 'Профиль' },
   ]
 
@@ -1880,6 +2022,7 @@ export default function Home() {
         <AnimatePresence mode="wait">
           {activeTab === 'search' && <SearchView key="search" />}
           {activeTab === 'top10' && <Top10View key="top10" />}
+          {activeTab === 'stats' && <StatsView key="stats" />}
           {activeTab === 'profile' && <ProfileView key="profile" user={session?.user} />}
         </AnimatePresence>
       </main>
