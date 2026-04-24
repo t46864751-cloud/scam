@@ -1113,7 +1113,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
         >
-          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold">Сообщить о скаме</h3>
               <button
@@ -1127,26 +1127,22 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Имя скамера *</label>
-                <TiltCard className="rounded-xl">
-                  <Input
-                    placeholder="Введите имя..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-12 rounded-xl bg-secondary border-border"
-                  />
-                </TiltCard>
+                <Input
+                  placeholder="Введите имя..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-12 rounded-xl bg-secondary border-border"
+                />
               </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Telegram ID скамера</label>
-                <TiltCard className="rounded-xl">
-                  <Input
-                    placeholder="Цифровой ID в Telegram..."
-                    value={telegramUserId}
-                    onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
-                    className="h-12 rounded-xl bg-secondary border-border"
-                  />
-                </TiltCard>
+                <Input
+                  placeholder="Цифровой ID в Telegram..."
+                  value={telegramUserId}
+                  onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
+                  className="h-12 rounded-xl bg-secondary border-border"
+                />
               </div>
 
               {statusTypes.length > 0 && (
@@ -1175,29 +1171,25 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Данные / описание</label>
-                <TiltCard className="rounded-xl">
-                  <Input
-                    placeholder="Телефон, Telegram, детали..."
-                    value={data}
-                    onChange={(e) => setData(e.target.value)}
-                    className="h-12 rounded-xl bg-secondary border-border"
-                  />
-                </TiltCard>
+                <Input
+                  placeholder="Телефон, Telegram, детали..."
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                  className="h-12 rounded-xl bg-secondary border-border"
+                />
               </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">
                   Ссылки на доказательства (по одной на строку, макс. 3)
                 </label>
-                <TiltCard className="rounded-xl">
-                  <textarea
-                    placeholder="https://t.me/..."
-                    value={screenshotText}
-                    onChange={(e) => setScreenshotText(e.target.value)}
-                    className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
-                    rows={3}
-                  />
-                </TiltCard>
+                <textarea
+                  placeholder="https://t.me/..."
+                  value={screenshotText}
+                  onChange={(e) => setScreenshotText(e.target.value)}
+                  className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
+                  rows={3}
+                />
                 <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
                   Киньте скриншоты на которых показано что вас заскамили (пруфы) в чат{' '}
                   <a href="https://t.me/wocmf" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-1">@wocmf</a>,{' '}
@@ -1220,7 +1212,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                 )}
               </Button>
             </div>
-          </TiltCard>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
