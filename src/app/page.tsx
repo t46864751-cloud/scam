@@ -1292,6 +1292,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
         toast.error(data.error)
         return
       }
+      toast.success('Комментарий отправлен на модерацию ✓')
       // Reload first page to see the new comment
       setCommentPage(1)
       loadComments(scammer.id, 1)
