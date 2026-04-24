@@ -36,6 +36,7 @@ export async function GET() {
       id: c.id,
       content: c.content,
       approved: c.approved,
+      hidden: c.hidden,
       createdAt: c.createdAt,
       user: c.user,
       scammer: c.scammer,
@@ -48,7 +49,7 @@ export async function GET() {
   }
 }
 
-// PUT: approve comment or ban user (admin only)
+// PUT: approve/hide/unhide comment or ban user (admin only)
 export async function PUT(req: NextRequest) {
   try {
     const user = await checkAdmin()
@@ -70,6 +71,22 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: 'Комментарий опубликован' })
     }
 
+    if (action === 'hide') {
+      await db.comment.update({
+        where: { id },
+        data: { hidden: true },
+      })
+      return NextResponse.json({ message: 'Комментарий скрыт' })
+    }
+
+    if (action === 'unhide') {
+      await db.comment.update({
+        where: { id },
+        data: { hidden: false },
+      })
+      return NextResponse.json({ message: 'Комментарий возвращён' })
+    }
+
     if (action === 'ban') {
       const comment = await db.comment.findUnique({
         where: { id },
@@ -78,14 +95,13 @@ export async function PUT(req: NextRequest) {
       if (!comment) {
         return NextResponse.json({ error: 'Комментарий не найден' }, { status: 404 })
       }
-      // Ban the user by setting role to 'banned'
       await db.user.update({
         where: { id: comment.userId },
         data: { role: 'banned' },
       })
-      // Delete all pending comments from this user
-      await db.comment.deleteMany({
+      await db.comment.updateMany({
         where: { userId: comment.userId, approved: false },
+        data: { hidden: true },
       })
       return NextResponse.json({ message: 'Пользователь заблокирован' })
     }
@@ -93,29 +109,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 })
   } catch (error) {
     console.error('Panel comments PUT error:', error)
-    return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
-  }
-}
-
-// DELETE: delete a comment (admin only)
-export async function DELETE(req: NextRequest) {
-  try {
-    const user = await checkAdmin()
-    if (!user) {
-      return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
-    }
-
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return NextResponse.json({ error: 'Укажите id комментария' }, { status: 400 })
-    }
-
-    await db.comment.delete({ where: { id } })
-    return NextResponse.json({ message: 'Комментарий удалён' })
-  } catch (error) {
-    console.error('Panel comments DELETE error:', error)
     return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
   }
 }

@@ -306,11 +306,17 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 <Input
                   placeholder="Имя пользователя"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                   className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4"
                   required
                   minLength={3}
+                  maxLength={20}
+                  pattern="[a-zA-Z0-9_]+"
+                  title="Только английские буквы, цифры и _"
                 />
+                {!isLogin && (
+                  <p className="text-[10px] text-muted-foreground mt-1 pl-1">Только английские буквы (a-z), цифры и _ • 3-20 символов</p>
+                )}
               </div>
 
               <div className="relative">
@@ -330,6 +336,9 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
+                {!isLogin && (
+                  <p className="text-[10px] text-muted-foreground mt-1 pl-1">Минимум 6 символов</p>
+                )}
               </div>
 
               <Button
@@ -359,6 +368,73 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+// ==================== 3D TILT CARD ====================
+function TiltCard({ children, className = '', ...props }: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
+  const ref = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number>(0)
+  const animRef = useRef<{ x: number; y: number; vx: number; vy: number }>({ x: 0, y: 0, vx: 0, vy: 0 })
+  const isTouchRef = useRef(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    // Detect touch device
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    isTouchRef.current = isTouch
+    const anim = animRef.current
+
+    // Auto-rotate on touch devices
+    if (isTouch) {
+      let t = Math.random() * Math.PI * 2
+      let running = true
+      const autoRotate = () => {
+        if (!running) return
+        t += 0.008
+        const tiltX = Math.sin(t * 0.7) * 12
+        const tiltY = Math.cos(t * 0.5) * 10
+        el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
+        rafRef.current = requestAnimationFrame(autoRotate)
+      }
+      autoRotate()
+      return () => { running = false; cancelAnimationFrame(rafRef.current) }
+    }
+
+    // Mouse tilt on desktop
+    const handleMove = (e: MouseEvent) => {
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const x = (e.clientX - rect.left) / rect.width
+      const y = (e.clientY - rect.top) / rect.height
+      const tiltX = (0.5 - y) * 24 // max 12 degrees
+      const tiltY = (x - 0.5) * 24
+      const sc = 1 + Math.abs(x - 0.5) * 0.06 + Math.abs(y - 0.5) * 0.06
+      el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
+      el.style.transition = 'transform 0.08s ease-out'
+    }
+
+    const handleLeave = () => {
+      if (!el) return
+      el.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)'
+      el.style.transform = 'perspective(600px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
+    }
+
+    el.addEventListener('mousemove', handleMove)
+    el.addEventListener('mouseleave', handleLeave)
+    return () => {
+      el.removeEventListener('mousemove', handleMove)
+      el.removeEventListener('mouseleave', handleLeave)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  return (
+    <div ref={ref} className={`transform-gpu ${className}`} style={{ transition: 'transform 0.3s ease-out' }} {...props}>
+      {children}
+    </div>
   )
 }
 
@@ -467,9 +543,7 @@ function FloatingScammers() {
                   className="snap-start shrink-0"
                   style={{ width: '180px' }}
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    whileTap={{ scale: 0.97 }}
+                  <TiltCard
                     onClick={() => setSelectedScammer(scammer)}
                     className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
                   >
@@ -505,7 +579,7 @@ function FloatingScammers() {
                       </span>
                       <span>{scammer.searchCount} поисков</span>
                     </div>
-                  </motion.div>
+                  </TiltCard>
                 </motion.div>
               ))}
               {/* Loading indicator at the end */}
@@ -1458,18 +1532,12 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
 // ==================== STATS VIEW ====================
 function StatsView() {
   const [stats, setStats] = useState<any>(null)
-  const [top10, setTop10] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/stats').then(r => r.json()),
-      fetch('/api/top10').then(r => r.json()),
-    ])
-      .then(([statsData, top10Data]) => {
-        setStats(statsData)
-        setTop10(top10Data.results || [])
-      })
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(d => setStats(d))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -1564,37 +1632,13 @@ function StatsView() {
           </div>
         </div>
       </div>
-
-      {/* Top 10 */}
-      {top10.length > 0 && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-3 font-medium">Топ-10 по поискам</p>
-          <div className="space-y-2">
-            {top10.map((item: any, i: number) => (
-              <motion.div
-                key={item.id || i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="glass rounded-xl p-3 flex items-center gap-3"
-              >
-                <span className="text-sm font-bold w-6 text-center text-muted-foreground">#{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{item.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.searchCount} поисков</p>
-                </div>
-                <span className="text-xs font-mono text-muted-foreground">{item.searchCount}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
     </motion.div>
   )
 }
 
 // ==================== PROFILE VIEW ====================
 function ProfileView({ user }: { user: any }) {
+  const { update } = useSession()
   const [showAuth, setShowAuth] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -1675,6 +1719,7 @@ function ProfileView({ user }: { user: any }) {
       }
       toast.success('Аватарка обновлена')
       setShowAvatarEdit(false)
+      await update()
     } catch {
       toast.error('Ошибка')
     } finally {
@@ -1879,6 +1924,27 @@ function ProfileView({ user }: { user: any }) {
       >
         <LogOut className="w-4 h-4" />
         Выйти
+      </button>
+
+      {/* Delete account */}
+      <button
+        onClick={async () => {
+          if (!confirm('Вы уверены? Это действие необратимо! Все ваши данные будут удалены.')) return
+          if (!confirm('Точно уверены? Аккаунт будет удалён навсегда.')) return
+          try {
+            const res = await fetch('/api/profile', { method: 'DELETE' })
+            const data = await res.json()
+            if (!res.ok) { toast.error(data.error); return }
+            toast.success('Аккаунт удалён')
+            await signOut({ callbackUrl: '/' })
+          } catch {
+            toast.error('Ошибка')
+          }
+        }}
+        className="w-full mt-3 py-3 rounded-2xl border border-red-500/20 text-red-500/60 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/5 transition-all flex items-center justify-center gap-2"
+      >
+        <Trash2 className="w-4 h-4" />
+        Удалить аккаунт
       </button>
     </motion.div>
   )

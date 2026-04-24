@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import {
   Shield, Search, Users, FileText, TrendingUp, AlertTriangle,
   Plus, Trash2, Edit3, CheckCircle, XCircle, RotateCcw,
-  Loader2, Eye, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
+  Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
   Download,
@@ -1662,14 +1662,24 @@ export default function PanelPage() {
                                   Забанить
                                 </Button>
                               )}
-                              <Button
-                                size="sm"
-                                onClick={() => handleDeleteComment(c.id)}
-                                className="h-7 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-mono text-[10px] rounded-lg"
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Удалить
-                              </Button>
+                              {c.hidden ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCommentAction(c.id, 'unhide')}
+                                  className="h-7 bg-yellow-600 hover:bg-yellow-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  Вернуть
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCommentAction(c.id, 'hide')}
+                                  className="h-7 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-mono text-[10px] rounded-lg"
+                                >
+                                  <EyeOff className="w-3 h-3 mr-1" />
+                                  Скрыть
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </motion.div>

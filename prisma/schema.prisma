@@ -79,7 +79,8 @@ model Comment {
   content   String
   scammerId String
   userId    String
-  approved  Boolean  @default(false) // false = pending moderation
+  approved  Boolean  @default(false)
+  hidden    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id])
