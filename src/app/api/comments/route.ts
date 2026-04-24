@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const [comments, total] = await Promise.all([
       db.comment.findMany({
-        where: { scammerId, approved: true },
+        where: { scammerId, approved: true, hidden: false },
         include: {
           user: {
             select: { id: true, username: true },
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-      db.comment.count({ where: { scammerId, approved: true } }),
+      db.comment.count({ where: { scammerId, approved: true, hidden: false } }),
     ])
 
     const results = comments.map((c) => ({

@@ -1600,7 +1600,7 @@ export default function PanelPage() {
                 <motion.div key="comments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <div className="mb-6">
                     <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Комментарии</h2>
-                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Модерация комментариев ({comments.length} записей)</p>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Модерация комментариев ({comments.filter((c: any) => !c.hidden).length} записей)</p>
                   </div>
 
                   {commentsLoading ? (
@@ -1619,7 +1619,7 @@ export default function PanelPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.03 }}
-                          className={`glass rounded-xl p-4 border ${c.approved ? 'border-green-500/10' : 'border-yellow-500/30'}`}
+                          className={`glass rounded-xl p-4 border ${c.hidden ? 'border-gray-500/20 opacity-50' : c.approved ? 'border-green-500/10' : 'border-yellow-500/30'}`}
                         >
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
@@ -1680,6 +1680,14 @@ export default function PanelPage() {
                                   Скрыть
                                 </Button>
                               )}
+                              <Button
+                                size="sm"
+                                onClick={() => { if (confirm('Удалить комментарий навсегда?')) handleDeleteComment(c.id) }}
+                                className="h-7 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Удалить
+                              </Button>
                             </div>
                           </div>
                         </motion.div>

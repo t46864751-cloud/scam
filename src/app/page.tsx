@@ -285,7 +285,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 w-full max-w-md mx-4 mb-20 sm:mb-0"
         >
-          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
+          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -303,32 +303,36 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
-                <Input
-                  placeholder="Имя пользователя"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
-                  className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4"
-                  required
-                  minLength={3}
-                  maxLength={20}
-                  pattern="[a-zA-Z0-9_]+"
-                  title="Только английские буквы, цифры и _"
-                />
+                <TiltCard className="rounded-xl">
+                  <Input
+                    placeholder="Имя пользователя"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                    className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4"
+                    required
+                    minLength={3}
+                    maxLength={20}
+                    pattern="[a-zA-Z0-9_]+"
+                    title="Только английские буквы, цифры и _"
+                  />
+                </TiltCard>
                 {!isLogin && (
                   <p className="text-[10px] text-muted-foreground mt-1 pl-1">Только английские буквы (a-z), цифры и _ • 3-20 символов</p>
                 )}
               </div>
 
               <div className="relative">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Пароль"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
-                  required
-                  minLength={6}
-                />
+                <TiltCard className="rounded-xl">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Пароль"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
+                    required
+                    minLength={6}
+                  />
+                </TiltCard>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -364,7 +368,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
               </button>
             </div>
-          </div>
+          </TiltCard>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -375,17 +379,39 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 function TiltCard({ children, className = '', ...props }: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
-  const animRef = useRef<{ x: number; y: number; vx: number; vy: number }>({ x: 0, y: 0, vx: 0, vy: 0 })
   const isTouchRef = useRef(false)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
 
-    // Detect touch device
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
     isTouchRef.current = isTouch
-    const anim = animRef.current
+
+    // Create glare overlay
+    let glareEl = el.querySelector('.tilt-glare') as HTMLElement
+    if (!glareEl) {
+      glareEl = document.createElement('div')
+      glareEl.className = 'tilt-glare'
+      glareEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;overflow:hidden;z-index:10;'
+      const glareInner = document.createElement('div')
+      glareInner.className = 'tilt-glare-inner'
+      glareInner.style.cssText = 'position:absolute;width:200%;height:200%;top:-50%;left:-50%;background:radial-gradient(ellipse at center, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);opacity:0;transition:opacity 0.3s;'
+      glareEl.appendChild(glareInner)
+      el.style.position = el.style.position || 'relative'
+      el.style.overflow = 'hidden'
+      el.appendChild(glareEl)
+    }
+    const glareInner = glareEl.querySelector('.tilt-glare-inner') as HTMLElement
+
+    // Create edge glow overlay
+    let glowEl = el.querySelector('.tilt-glow') as HTMLElement
+    if (!glowEl) {
+      glowEl = document.createElement('div')
+      glowEl.className = 'tilt-glow'
+      glowEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;opacity:0;transition:opacity 0.4s;box-shadow:inset 0 0 30px rgba(96,165,250,0.08), inset 0 0 60px rgba(139,92,246,0.05);'
+      el.appendChild(glowEl)
+    }
 
     // Auto-rotate on touch devices
     if (isTouch) {
@@ -393,46 +419,65 @@ function TiltCard({ children, className = '', ...props }: { children: React.Reac
       let running = true
       const autoRotate = () => {
         if (!running) return
-        t += 0.008
-        const tiltX = Math.sin(t * 0.7) * 12
-        const tiltY = Math.cos(t * 0.5) * 10
-        el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
+        t += 0.006
+        const tiltX = Math.sin(t * 0.7) * 8
+        const tiltY = Math.cos(t * 0.5) * 6
+        el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.01, 1.01, 1.01)`
         rafRef.current = requestAnimationFrame(autoRotate)
       }
       autoRotate()
+      // Show subtle glare during auto-rotate
+      glareEl.style.opacity = '1'
+      glowEl.style.opacity = '1'
       return () => { running = false; cancelAnimationFrame(rafRef.current) }
     }
 
-    // Mouse tilt on desktop
+    // Mouse tilt on desktop — enhanced
     const handleMove = (e: MouseEvent) => {
       if (!el) return
       const rect = el.getBoundingClientRect()
       const x = (e.clientX - rect.left) / rect.width
       const y = (e.clientY - rect.top) / rect.height
-      const tiltX = (0.5 - y) * 24 // max 12 degrees
-      const tiltY = (x - 0.5) * 24
-      const sc = 1 + Math.abs(x - 0.5) * 0.06 + Math.abs(y - 0.5) * 0.06
-      el.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
-      el.style.transition = 'transform 0.08s ease-out'
+      const tiltX = (0.5 - y) * 20
+      const tiltY = (x - 0.5) * 20
+      const sc = 1 + Math.abs(x - 0.5) * 0.04 + Math.abs(y - 0.5) * 0.04
+      el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
+      el.style.transition = 'transform 0.1s ease-out'
+      
+      // Move glare to follow cursor
+      const glareX = x * 100
+      const glareY = y * 100
+      glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0) 60%)`
+      glareEl.style.opacity = '1'
+      glowEl.style.opacity = '1'
+    }
+
+    const handleEnter = () => {
+      glareEl.style.opacity = '1'
+      glowEl.style.opacity = '1'
     }
 
     const handleLeave = () => {
       if (!el) return
       el.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)'
-      el.style.transform = 'perspective(600px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
+      el.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
+      glareEl.style.opacity = '0'
+      glowEl.style.opacity = '0'
     }
 
     el.addEventListener('mousemove', handleMove)
+    el.addEventListener('mouseenter', handleEnter)
     el.addEventListener('mouseleave', handleLeave)
     return () => {
       el.removeEventListener('mousemove', handleMove)
+      el.removeEventListener('mouseenter', handleEnter)
       el.removeEventListener('mouseleave', handleLeave)
       cancelAnimationFrame(rafRef.current)
     }
   }, [])
 
   return (
-    <div ref={ref} className={`transform-gpu ${className}`} style={{ transition: 'transform 0.3s ease-out' }} {...props}>
+    <div ref={ref} data-tilt className={`transform-gpu will-change-transform ${className}`} style={{ transition: 'transform 0.3s ease-out' }} {...props}>
       {children}
     </div>
   )
@@ -1068,7 +1113,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
         >
-          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold">Сообщить о скаме</h3>
               <button
@@ -1082,22 +1127,26 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Имя скамера *</label>
-                <Input
-                  placeholder="Введите имя..."
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-12 rounded-xl bg-secondary border-border"
-                />
+                <TiltCard className="rounded-xl">
+                  <Input
+                    placeholder="Введите имя..."
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-12 rounded-xl bg-secondary border-border"
+                  />
+                </TiltCard>
               </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Telegram ID скамера</label>
-                <Input
-                  placeholder="Цифровой ID в Telegram..."
-                  value={telegramUserId}
-                  onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
-                  className="h-12 rounded-xl bg-secondary border-border"
-                />
+                <TiltCard className="rounded-xl">
+                  <Input
+                    placeholder="Цифровой ID в Telegram..."
+                    value={telegramUserId}
+                    onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
+                    className="h-12 rounded-xl bg-secondary border-border"
+                  />
+                </TiltCard>
               </div>
 
               {statusTypes.length > 0 && (
@@ -1126,25 +1175,29 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Данные / описание</label>
-                <Input
-                  placeholder="Телефон, Telegram, детали..."
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  className="h-12 rounded-xl bg-secondary border-border"
-                />
+                <TiltCard className="rounded-xl">
+                  <Input
+                    placeholder="Телефон, Telegram, детали..."
+                    value={data}
+                    onChange={(e) => setData(e.target.value)}
+                    className="h-12 rounded-xl bg-secondary border-border"
+                  />
+                </TiltCard>
               </div>
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">
                   Ссылки на доказательства (по одной на строку, макс. 3)
                 </label>
-                <textarea
-                  placeholder="https://t.me/..."
-                  value={screenshotText}
-                  onChange={(e) => setScreenshotText(e.target.value)}
-                  className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
-                  rows={3}
-                />
+                <TiltCard className="rounded-xl">
+                  <textarea
+                    placeholder="https://t.me/..."
+                    value={screenshotText}
+                    onChange={(e) => setScreenshotText(e.target.value)}
+                    className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
+                    rows={3}
+                  />
+                </TiltCard>
                 <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
                   Киньте скриншоты на которых показано что вас заскамили (пруфы) в чат{' '}
                   <a href="https://t.me/wocmf" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-1">@wocmf</a>,{' '}
@@ -1167,7 +1220,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                 )}
               </Button>
             </div>
-          </div>
+          </TiltCard>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -1272,7 +1325,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
           onClick={(e) => e.stopPropagation()}
           className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
         >
-          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 min-w-0">
@@ -1422,14 +1475,16 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
               {/* Add comment — only for logged-in users */}
               {isLoggedIn && (
                 <div className="flex gap-2 mb-3">
-                  <Input
-                    placeholder="Написать комментарий..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendComment()}
-                    className="h-10 rounded-xl bg-secondary border-border text-sm flex-1 min-w-0"
-                    maxLength={500}
-                  />
+                  <TiltCard className="rounded-xl flex-1 min-w-0">
+                    <Input
+                      placeholder="Написать комментарий..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendComment()}
+                      className="h-10 rounded-xl bg-secondary border-border text-sm"
+                      maxLength={500}
+                    />
+                  </TiltCard>
                   <Button
                     onClick={handleSendComment}
                     disabled={sendingComment || !newComment.trim()}
@@ -1522,7 +1577,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 </p>
               </div>
             )}
-          </div>
+          </TiltCard>
         </motion.div>
       </motion.div>
     </AnimatePresence>
