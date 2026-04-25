@@ -299,3 +299,145 @@
 }
 .animate-pulse-red { animation: pulse-red 2s infinite; }
 .animate-pulse-green { animation: pulse-green 2s infinite; }
+
+/* ===== DRUNK MODE ===== */
+
+.drunk-mode {
+  animation: drunk-bg 0.3s ease-in-out infinite alternate;
+}
+
+.drunk-mode * {
+  animation-duration: 0.15s !important;
+  animation-iteration-count: infinite !important;
+  animation-timing-function: ease-in-out !important;
+}
+
+.drunk-mode body,
+.drunk-mode main,
+.drunk-mode .relative,
+.drunk-mode .glass,
+.drunk-mode .glass-strong {
+  animation: drunk-shake 0.1s linear infinite, drunk-tilt 2s ease-in-out infinite alternate !important;
+}
+
+.drunk-mode .glass,
+.drunk-mode .glass-strong,
+.drunk-mode button,
+.drunk-mode [class*="rounded"] {
+  animation: drunk-shake 0.08s linear infinite, drunk-wobble 0.5s ease-in-out infinite alternate, drunk-tilt 1.5s ease-in-out infinite alternate !important;
+  filter: hue-rotate(var(--drunk-hue, 0deg)) saturate(1.8) !important;
+  border-color: hsl(var(--drunk-hue, 0), 80%, 60%) !important;
+}
+
+.drunk-mode .gradient-bg::before {
+  animation: drunk-gradient 0.5s linear infinite !important;
+  filter: hue-rotate(180deg) saturate(3) !important;
+}
+
+.drunk-mode h1, .drunk-mode h2, .drunk-mode h3, .drunk-mode p, .drunk-mode span, .drunk-mode a, .drunk-mode div {
+  animation: drunk-text-shake 0.2s linear infinite, drunk-text-color 1s linear infinite !important;
+}
+
+.drunk-mode img, .drunk-mode svg {
+  animation: drunk-spin 1s linear infinite, drunk-jitter 0.15s linear infinite !important;
+  filter: hue-rotate(90deg) !important;
+}
+
+.drunk-mode [class*="avatar"],
+.drunk-mode [class*="Avatar"] {
+  animation: drunk-spin 2s linear infinite, drunk-pulse-size 0.3s ease-in-out infinite alternate !important;
+  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70% !important;
+}
+
+.drunk-mode ::-webkit-scrollbar-thumb {
+  background: hsl(var(--drunk-hue, 0), 90%, 50%) !important;
+  animation: drunk-scrollbar 0.3s ease-in-out infinite alternate !important;
+}
+
+@keyframes drunk-shake {
+  0% { transform: translate(-2px, 1px) rotate(-1deg); }
+  25% { transform: translate(2px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+  75% { transform: translate(1px, 2px) rotate(0.5deg); }
+  100% { transform: translate(2px, 1px) rotate(1deg); }
+}
+
+@keyframes drunk-tilt {
+  0% { transform: perspective(500px) rotateX(-5deg) rotateY(-8deg) rotateZ(-2deg); }
+  25% { transform: perspective(500px) rotateX(5deg) rotateY(8deg) rotateZ(2deg); }
+  50% { transform: perspective(500px) rotateX(-8deg) rotateY(5deg) rotateZ(-1deg); }
+  75% { transform: perspective(500px) rotateX(3deg) rotateY(-10deg) rotateZ(3deg); }
+  100% { transform: perspective(500px) rotateX(-6deg) rotateY(-5deg) rotateZ(-3deg); }
+}
+
+@keyframes drunk-wobble {
+  0% { transform: translateX(-3px) skewX(-2deg); }
+  50% { transform: translateX(3px) skewX(2deg); }
+  100% { transform: translateX(-2px) skewX(-1deg); }
+}
+
+@keyframes drunk-bg {
+  0% { background-position: 0% 0%; background-color: rgba(139, 0, 255, 0.03); }
+  33% { background-position: 100% 50%; background-color: rgba(255, 0, 100, 0.03); }
+  66% { background-position: 50% 100%; background-color: rgba(0, 255, 200, 0.03); }
+  100% { background-position: 0% 100%; background-color: rgba(255, 200, 0, 0.03); }
+}
+
+@keyframes drunk-gradient {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1.3); }
+  25% { transform: translate(10%, -10%) rotate(90deg) scale(1.5); }
+  50% { transform: translate(-10%, 10%) rotate(180deg) scale(1.2); }
+  75% { transform: translate(5%, -5%) rotate(270deg) scale(1.4); }
+  100% { transform: translate(0, 0) rotate(360deg) scale(1.3); }
+}
+
+@keyframes drunk-text-shake {
+  0% { transform: translate(0, 0) skewX(0deg); }
+  20% { transform: translate(1px, -1px) skewX(-1deg); }
+  40% { transform: translate(-1px, 1px) skewX(1deg); }
+  60% { transform: translate(1px, 0) skewX(-0.5deg); }
+  80% { transform: translate(-1px, -1px) skewX(0.5deg); }
+  100% { transform: translate(0, 0) skewX(0deg); }
+}
+
+@keyframes drunk-text-color {
+  0% { color: #ff6b6b; }
+  14% { color: #feca57; }
+  28% { color: #48dbfb; }
+  42% { color: #ff9ff3; }
+  57% { color: #54a0ff; }
+  71% { color: #5f27cd; }
+  85% { color: #01a3a4; }
+  100% { color: #ff6b6b; }
+}
+
+@keyframes drunk-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes drunk-jitter {
+  0% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(2px, -2px) scale(1.05); }
+  50% { transform: translate(-2px, 1px) scale(0.95); }
+  75% { transform: translate(1px, 2px) scale(1.02); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes drunk-pulse-size {
+  0% { transform: scale(1) rotate(0deg); border-radius: 50%; }
+  50% { transform: scale(1.15) rotate(10deg); border-radius: 40% 60% 60% 40%; }
+  100% { transform: scale(1) rotate(-10deg); border-radius: 60% 40% 40% 60%; }
+}
+
+@keyframes drunk-scrollbar {
+  0% { transform: translateX(0) scaleX(1); }
+  100% { transform: translateX(2px) scaleX(1.5); }
+}
+
+@keyframes drunk-btn {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  25% { transform: rotate(2deg) scale(1.05); }
+  50% { transform: rotate(-1deg) scale(0.98); }
+  75% { transform: rotate(3deg) scale(1.02); }
+}

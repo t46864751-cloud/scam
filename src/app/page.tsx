@@ -1791,12 +1791,49 @@ function ProfileView({ user }: { user: any }) {
   const [avatarUrl, setAvatarUrl] = useState((user as any)?.image || '')
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [showAvatarEdit, setShowAvatarEdit] = useState(false)
+  const [drunkMode, setDrunkMode] = useState(false)
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const logoutIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Sync avatarUrl when session user image changes (e.g. after update())
   useEffect(() => {
     const img = (user as any)?.image || ''
     if (img) setAvatarUrl(img)
   }, [user])
+
+  // Drunk mode: toggle class on <html>
+  useEffect(() => {
+    if (drunkMode) {
+      document.documentElement.classList.add('drunk-mode')
+    } else {
+      document.documentElement.classList.remove('drunk-mode')
+    }
+    return () => document.documentElement.classList.remove('drunk-mode')
+  }, [drunkMode])
+
+  const handleLogoutDown = () => {
+    logoutTimerRef.current = setTimeout(() => {
+      setDrunkMode(true)
+      toast('Режим алкаша активирован!', { description: 'Удерживай ещё раз чтобы выключить' })
+      logoutTimerRef.current = null
+    }, 3000)
+  }
+
+  const handleLogoutUp = () => {
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current)
+      logoutTimerRef.current = null
+    }
+  }
+
+  const handleLogoutClick = () => {
+    if (drunkMode) {
+      setDrunkMode(false)
+      toast.success('Режим алкаша выключен. Ты протрезвел.')
+      return
+    }
+    signOut()
+  }
 
   useEffect(() => {
     if (!user) return
@@ -2138,11 +2175,16 @@ function ProfileView({ user }: { user: any }) {
 
       {/* Logout */}
       <button
-        onClick={() => signOut()}
-        className="w-full mt-4 py-3 rounded-2xl border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+        onClick={handleLogoutClick}
+        onMouseDown={handleLogoutDown}
+        onMouseUp={handleLogoutUp}
+        onMouseLeave={handleLogoutUp}
+        onTouchStart={handleLogoutDown}
+        onTouchEnd={handleLogoutUp}
+        className={`w-full mt-4 py-3 rounded-2xl border transition-all flex items-center justify-center gap-2 ${drunkMode ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 animate-drunk-btn' : 'border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'}`}
       >
         <LogOut className="w-4 h-4" />
-        Выйти
+        {drunkMode ? 'Протрезветь' : 'Выйти'}
       </button>
 
       {/* Delete account */}
