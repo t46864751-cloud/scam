@@ -481,18 +481,28 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       }
     }
 
-    // ---- TOUCH: Continuous auto-rotate, no pause ----
+    // ---- TOUCH: CSS animation (unstoppable) + rAF for effects ----
+    // Inject keyframes once
+    const styleId = 'tilt-auto-rotate-style'
+    if (!document.getElementById(styleId)) {
+      const s = document.createElement('style')
+      s.id = styleId
+      s.textContent = `@keyframes tiltAutoRotate{0%{transform:perspective(800px) rotateX(10deg) rotateY(-8deg) scale3d(1.04,1.04,1.04)}25%{transform:perspective(800px) rotateX(-3deg) rotateY(12deg) scale3d(1.06,1.06,1.06)}50%{transform:perspective(800px) rotateX(-10deg) rotateY(8deg) scale3d(1.04,1.04,1.04)}75%{transform:perspective(800px) rotateX(3deg) rotateY(-12deg) scale3d(1.02,1.02,1.02)}100%{transform:perspective(800px) rotateX(10deg) rotateY(-8deg) scale3d(1.04,1.04,1.04)}}`
+      document.head.appendChild(s)
+    }
+
+    // CSS animation never stops - browser compositor handles it
+    const duration = 6 + Math.random() * 6
+    const delay = -Math.random() * duration
+    el.style.animation = `tiltAutoRotate ${duration}s ease-in-out infinite`
+    el.style.animationDelay = `${delay}s`
+
+    // rAF only updates glare/holo position (not critical if paused during scroll)
     let running = true
     let phase = Math.random() * Math.PI * 2
-
-    const autoRotate = () => {
+    const updateEffects = () => {
       if (!running || !el) return
-      phase += 0.01
-      const tiltX = Math.sin(phase * 0.7) * 12
-      const tiltY = Math.cos(phase * 0.5) * 10
-      const sc = 1.04 + Math.sin(phase * 0.3) * 0.02
-      el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
-
+      phase += 0.012
       const glareX = 50 + Math.sin(phase * 0.7) * 35
       const glareY = 50 + Math.cos(phase * 0.5) * 35
       glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 60%)`
@@ -500,10 +510,9 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       glareEl.style.opacity = '1'
       glowEl.style.opacity = '1'
       holoEl.style.opacity = '0.8'
-
-      rafRef.current = requestAnimationFrame(autoRotate)
+      rafRef.current = requestAnimationFrame(updateEffects)
     }
-    autoRotate()
+    updateEffects()
 
     return () => {
       running = false

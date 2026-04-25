@@ -175,13 +175,14 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // Delete user and all related data
-    await db.comment.deleteMany({ where: { userId: targetId } })
-    await db.submission.deleteMany({ where: { userId: targetId } })
-    await db.searchLog.deleteMany({ where: { userId: targetId } })
-    await db.vote.deleteMany({ where: { userId: targetId } })
-    await db.complaint.deleteMany({ where: { userId: targetId } })
-    await db.user.delete({ where: { id: targetId } })
+    // Delete user and all related data in a transaction
+    await db.$transaction([
+      db.comment.deleteMany({ where: { userId: targetId } }),
+      db.submission.deleteMany({ where: { userId: targetId } }),
+      db.searchLog.deleteMany({ where: { userId: targetId } }),
+      db.vote.deleteMany({ where: { voterId: { startsWith: 'user:' + targetId } } }),
+      db.user.delete({ where: { id: targetId } }),
+    ])
 
     return NextResponse.json({ message: 'Пользователь удалён' })
   } catch (error) {
