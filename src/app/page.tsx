@@ -513,7 +513,6 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
 // ==================== FLOATING SCAMMERS ====================
 function FloatingScammers() {
   const { setSelectedScammer } = useAppStore()
-  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const [scammers, setScammers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -616,10 +615,9 @@ function FloatingScammers() {
                   className="snap-start shrink-0"
                   style={{ width: '180px' }}
                 >
-                  <TiltCard
+                  <div
                     onClick={() => setSelectedScammer(scammer)}
-                    enabled={tiltEnabled !== false}
-                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
+                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98]`}
                   >
                     {/* Avatar + status */}
                     <div className="flex items-center gap-2 mb-3">
@@ -653,7 +651,7 @@ function FloatingScammers() {
                       </span>
                       <span>{scammer.searchCount} поисков</span>
                     </div>
-                  </TiltCard>
+                  </div>
                 </motion.div>
               ))}
               {/* Loading indicator at the end */}
@@ -784,7 +782,6 @@ function ComplaintCard({ name }: { name: string }) {
 // ==================== SEARCH VIEW ====================
 function SearchView() {
   const { setSelectedScammer } = useAppStore()
-  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const [query, setQuery] = useState('')
   const [telegramId, setTelegramId] = useState('')
   const [results, setResults] = useState<ScammerResult[]>([])
@@ -903,34 +900,30 @@ function SearchView() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
+                  onClick={() => setSelectedScammer(scammer)}
+                  className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300 active:scale-[0.98]"
                 >
-                  <TiltCard
-                    enabled={tiltEnabled !== false}
-                    onClick={() => setSelectedScammer(scammer)}
-                    className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar className="h-10 w-10 shrink-0">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold">
-                            {scammer.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate">{scammer.name}</p>
-                          <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <StatusBadge status={scammer.statusLabel || scammer.status} color={scammer.statusColor} textColor={scammer.statusTextColor} />
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="h-10 w-10 shrink-0">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold">
+                          {scammer.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{scammer.name}</p>
+                        <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
                       </div>
                     </div>
-                    {/* Like/Dislike bar */}
-                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-                      <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <StatusBadge status={scammer.statusLabel || scammer.status} color={scammer.statusColor} textColor={scammer.statusTextColor} />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
-                  </TiltCard>
+                  </div>
+                  {/* Like/Dislike bar */}
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+                    <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
+                  </div>
                 </motion.div>
               ))
             ) : (
@@ -968,7 +961,6 @@ function SearchView() {
 // ==================== TOP 10 VIEW ====================
 function Top10View() {
   const { setSelectedScammer } = useAppStore()
-  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1022,47 +1014,43 @@ function Top10View() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
+              onClick={() => setSelectedScammer(item)}
+              className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300 active:scale-[0.98]"
             >
-              <TiltCard
-                enabled={tiltEnabled !== false}
-                onClick={() => setSelectedScammer(item)}
-                className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative shrink-0">
-                    <Avatar className="h-11 w-11">
-                      <AvatarFallback
-                        className={`font-bold text-white ${
-                          i === 0
-                            ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                            : i === 1
-                            ? 'bg-gradient-to-br from-gray-300 to-gray-400'
-                            : i === 2
-                            ? 'bg-gradient-to-br from-amber-600 to-amber-700'
-                            : 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50'
-                        }`}
-                      >
-                        {i + 1}
-                      </AvatarFallback>
-                    </Avatar>
-                    {i < 3 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: i * 0.1 + 0.3 }}
-                        className="absolute -top-1 -right-1 text-xs"
-                      >
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                      </motion.div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.totalSearches} поисков</p>
-                  </div>
-                  <StatusBadge status={item.statusLabel || item.status} color={item.statusColor} textColor={item.statusTextColor} />
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <Avatar className="h-11 w-11">
+                    <AvatarFallback
+                      className={`font-bold text-white ${
+                        i === 0
+                          ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                          : i === 1
+                          ? 'bg-gradient-to-br from-gray-300 to-gray-400'
+                          : i === 2
+                          ? 'bg-gradient-to-br from-amber-600 to-amber-700'
+                          : 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50'
+                      }`}
+                    >
+                      {i + 1}
+                    </AvatarFallback>
+                  </Avatar>
+                  {i < 3 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: i * 0.1 + 0.3 }}
+                      className="absolute -top-1 -right-1 text-xs"
+                    >
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                    </motion.div>
+                  )}
                 </div>
-              </TiltCard>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">{item.totalSearches} поисков</p>
+                </div>
+                <StatusBadge status={item.statusLabel || item.status} color={item.statusColor} textColor={item.statusTextColor} />
+              </div>
             </motion.div>
           ))}
         </div>
