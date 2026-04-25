@@ -11,13 +11,14 @@ import {
   Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
-  Download,
+  Download, Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { signOut } from 'next-auth/react'
+import NameHistoryModal from '@/components/NameHistoryModal'
 
 interface Scammer {
   id: string
@@ -453,6 +454,9 @@ export default function PanelPage() {
   const [editScamDate, setEditScamDate] = useState('')
   const [editProofLink, setEditProofLink] = useState('')
   const [editTelegramUserId, setEditTelegramUserId] = useState('')
+
+  // Name history modal
+  const [nameHistoryScammer, setNameHistoryScammer] = useState<{ id: string; name: string } | null>(null)
 
   // Comments moderation
   const [comments, setComments] = useState<any[]>([])
@@ -1285,6 +1289,13 @@ export default function PanelPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               {statusBadge(s.status, s.statusLabel, s.statusColor, s.statusTextColor)}
+                              <button
+                                onClick={function openHist() { setNameHistoryScammer({ id: s.id, name: s.name }) }}
+                                className="p-2 rounded-lg hover:bg-blue-500/10 transition-colors"
+                                title="История имён"
+                              >
+                                <Clock className="w-4 h-4 text-blue-400 hover:text-blue-300" />
+                              </button>
                               <button
                                 onClick={() => startEdit(s)}
                                 className="p-2 rounded-lg hover:bg-green-500/10 transition-colors"
@@ -2261,6 +2272,13 @@ export default function PanelPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Name History Modal */}
+      <NameHistoryModal
+        scammer={nameHistoryScammer}
+        onClose={function closeHist() { setNameHistoryScammer(null) }}
+        onRollback={function afterRollback() { loadScammers(scammerPage, scammerSearch) }}
+      />
     </div>
   )
 }
