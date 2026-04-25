@@ -401,7 +401,7 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
-    // Create glare overlay
+    // Create subtle glare overlay
     let glareEl = el.querySelector('.tilt-glare') as HTMLElement
     if (!glareEl) {
       glareEl = document.createElement('div')
@@ -409,31 +409,13 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       glareEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;overflow:hidden;z-index:10;'
       const glareInner = document.createElement('div')
       glareInner.className = 'tilt-glare-inner'
-      glareInner.style.cssText = 'position:absolute;width:200%;height:200%;top:-50%;left:-50%;background:radial-gradient(ellipse at center, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 70%);opacity:0;transition:opacity 0.3s;'
+      glareInner.style.cssText = 'position:absolute;width:200%;height:200%;top:-50%;left:-50%;background:radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);opacity:0;transition:opacity 0.3s;'
       glareEl.appendChild(glareInner)
       el.style.position = el.style.position || 'relative'
       el.style.overflow = 'hidden'
       el.appendChild(glareEl)
     }
     const glareInner = glareEl.querySelector('.tilt-glare-inner') as HTMLElement
-
-    // Create holographic rainbow overlay
-    let holoEl = el.querySelector('.tilt-holo') as HTMLElement
-    if (!holoEl) {
-      holoEl = document.createElement('div')
-      holoEl.className = 'tilt-holo'
-      holoEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:9;opacity:0;transition:opacity 0.4s;background:linear-gradient(125deg, rgba(96,165,250,0.06) 0%, rgba(168,85,247,0.08) 25%, rgba(236,72,153,0.06) 50%, rgba(34,211,238,0.08) 75%, rgba(96,165,250,0.06) 100%);background-size:200% 200%;mix-blend-mode:overlay;'
-      el.appendChild(holoEl)
-    }
-
-    // Create edge glow overlay
-    let glowEl = el.querySelector('.tilt-glow') as HTMLElement
-    if (!glowEl) {
-      glowEl = document.createElement('div')
-      glowEl.className = 'tilt-glow'
-      glowEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;opacity:0;transition:opacity 0.4s;box-shadow:inset 0 0 40px rgba(96,165,250,0.12), inset 0 0 80px rgba(139,92,246,0.08), inset 0 0 120px rgba(236,72,153,0.04);'
-      el.appendChild(glowEl)
-    }
 
     // ---- DESKTOP: Mouse follow tilt ----
     if (!isTouchDevice) {
@@ -442,38 +424,27 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
         const rect = el.getBoundingClientRect()
         const x = (e.clientX - rect.left) / rect.width
         const y = (e.clientY - rect.top) / rect.height
-        const tiltX = (0.5 - y) * 25
-        const tiltY = (x - 0.5) * 25
-        const sc = 1 + Math.abs(x - 0.5) * 0.06 + Math.abs(y - 0.5) * 0.06
+        const tiltX = (0.5 - y) * 12
+        const tiltY = (x - 0.5) * 12
+        const sc = 1 + Math.abs(x - 0.5) * 0.03 + Math.abs(y - 0.5) * 0.03
         el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
-        el.style.transition = 'transform 0.08s ease-out'
+        el.style.transition = 'transform 0.1s ease-out'
         
-        // Move glare to follow cursor
         const glareX = x * 100
         const glareY = y * 100
-        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 60%)`
-        // Move holographic gradient
-        const bgX = 50 + (x - 0.5) * 80
-        const bgY = 50 + (y - 0.5) * 80
-        holoEl.style.backgroundPosition = `${bgX}% ${bgY}%`
+        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0) 60%)`
         glareEl.style.opacity = '1'
-        glowEl.style.opacity = '1'
-        holoEl.style.opacity = '1'
       }
 
       const handleEnter = () => {
         glareEl.style.opacity = '1'
-        glowEl.style.opacity = '1'
-        holoEl.style.opacity = '1'
       }
 
       const handleLeave = () => {
         if (!el) return
-        el.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)'
+        el.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
         el.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
         glareEl.style.opacity = '0'
-        glowEl.style.opacity = '0'
-        holoEl.style.opacity = '0'
       }
 
       el.addEventListener('mousemove', handleMove)
@@ -487,46 +458,34 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       }
     }
 
-    // ---- TOUCH: Auto-rotate (stronger) + touch-pause ----
+    // ---- TOUCH: Smooth auto-rotate + pause on scroll ----
     let running = true
-    const basePhase = Math.random() * Math.PI * 2
-    phaseRef.current = basePhase
-    let holoShift = 0
+    phaseRef.current = Math.random() * Math.PI * 2
 
     const autoRotate = () => {
       if (!running) return
       if (!touchPausedRef.current && el) {
         phaseRef.current += 0.008
         const t = phaseRef.current
-        const tiltX = Math.sin(t * 0.7) * 14
-        const tiltY = Math.cos(t * 0.5) * 12
-        const sc = 1.03 + Math.sin(t * 0.3) * 0.02
-        el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
+        const tiltX = Math.sin(t * 0.7) * 8
+        const tiltY = Math.cos(t * 0.5) * 6
+        el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
 
-        // Animate glare position during rotation
-        const glareX = 50 + Math.sin(t * 0.7) * 40
-        const glareY = 50 + Math.cos(t * 0.5) * 40
-        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 60%)`
-
-        // Animate holographic gradient
-        holoShift += 0.3
-        holoEl.style.backgroundPosition = `${50 + Math.sin(t * 0.4) * 30}% ${50 + Math.cos(t * 0.3) * 30}%`
+        const glareX = 50 + Math.sin(t * 0.7) * 30
+        const glareY = 50 + Math.cos(t * 0.5) * 30
+        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0) 60%)`
+        glareEl.style.opacity = '1'
       }
       rafRef.current = requestAnimationFrame(autoRotate)
     }
     autoRotate()
 
-    // Show effects
-    glareEl.style.opacity = '1'
-    glowEl.style.opacity = '1'
-    holoEl.style.opacity = '0.7'
-
-    // Pause auto-rotate on touch, resume after
     const handleTouchStart = () => {
       touchPausedRef.current = true
       if (el) {
         el.style.transition = 'transform 0.3s ease-out'
         el.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
+        glareEl.style.opacity = '0'
       }
     }
     const handleTouchEnd = () => {
