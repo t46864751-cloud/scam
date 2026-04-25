@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { SessionProvider } from 'next-auth/react'
 import { ReactNode } from 'react'
 
 export default function PanelLayout({
@@ -19,7 +18,6 @@ export default function PanelLayout({
     html.classList.add('dark')
 
     // Watch for light class being added by root ThemeProvider
-    // IMPORTANT: disconnect before modifying to avoid infinite loop
     observerRef.current = new MutationObserver(() => {
       if (html.classList.contains('light')) {
         observerRef.current?.disconnect()
@@ -44,9 +42,5 @@ export default function PanelLayout({
     }
   }, [])
 
-  return (
-    <SessionProvider>
-      {children}
-    </SessionProvider>
-  )
+  return <>{children}</>
 }
