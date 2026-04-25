@@ -488,6 +488,10 @@ export default function PanelPage() {
   const [newStatusKey, setNewStatusKey] = useState('')
   const [newStatusColor, setNewStatusColor] = useState('#6b7280')
   const [newStatusTextColor, setNewStatusTextColor] = useState('#ffffff')
+  const [editingStatusId, setEditingStatusId] = useState<string | null>(null)
+  const [editStatusLabel, setEditStatusLabel] = useState('')
+  const [editStatusColor, setEditStatusColor] = useState('#6b7280')
+  const [editStatusTextColor, setEditStatusTextColor] = useState('#ffffff')
 
   // Top 10 stats
   const [top10Data, setTop10Data] = useState<any[]>([])
@@ -602,6 +606,36 @@ export default function PanelPage() {
       const data = await res.json()
       if (!res.ok) { toast.error(data.error); return }
       toast.success('Тип удален')
+      const r2 = await fetch('/api/status-types')
+      const d2 = await r2.json()
+      if (d2.statuses) setStatusTypes(d2.statuses)
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleEditStatus = (st: any) => {
+    setEditingStatusId(st.id)
+    setEditStatusLabel(st.label)
+    setEditStatusColor(st.color)
+    setEditStatusTextColor(st.textColor)
+  }
+
+  const handleSaveEditStatus = async () => {
+    if (!editingStatusId || !editStatusLabel.trim()) { toast.error('Введите название'); return }
+    try {
+      const res = await fetch('/api/status-types', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingStatusId,
+          label: editStatusLabel.trim(),
+          color: editStatusColor,
+          textColor: editStatusTextColor,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success('Тип обновлен')
+      setEditingStatusId(null)
       const r2 = await fetch('/api/status-types')
       const d2 = await r2.json()
       if (d2.statuses) setStatusTypes(d2.statuses)
@@ -1911,32 +1945,116 @@ export default function PanelPage() {
                     <p className="text-sm font-mono text-green-400 mb-3">Существующие типы:</p>
                     <div className="space-y-2">
                       {statusTypes.map((st) => (
-                        <div key={st.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-green-500/5">
-                          <div className="flex items-center gap-3">
-                            <span
-                              className="text-xs px-3 py-1 rounded-full font-semibold border"
-                              style={{
-                                backgroundColor: st.color + '33',
-                                color: st.textColor,
-                                borderColor: st.color + '55',
-                              }}
-                            >
-                              {st.label}
-                            </span>
-                            <span className="text-xs text-green-600 font-mono">{st.key}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: st.color }} />
-                            {!st.isDefault && (
+                        editingStatusId === st.id ? (
+                          /* Edit mode */
+                          <div key={st.id} className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-green-600 font-mono">{st.key}</span>
+                              {st.isDefault && <span className="text-[10px] text-muted-foreground">по умолчанию</span>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div>
+                                <label className="text-[10px] text-green-600 font-mono mb-0.5 block">Название</label>
+                                <Input
+                                  value={editStatusLabel}
+                                  onChange={(e) => setEditStatusLabel(e.target.value)}
+                                  className="h-8 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-green-600 font-mono mb-0.5 block">Цвет фона</label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={editStatusColor}
+                                    onChange={(e) => setEditStatusColor(e.target.value)}
+                                    className="w-7 h-7 rounded border border-green-500/20 cursor-pointer bg-transparent"
+                                  />
+                                  <Input
+                                    value={editStatusColor}
+                                    onChange={(e) => setEditStatusColor(e.target.value)}
+                                    className="h-7 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono text-xs"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-green-600 font-mono mb-0.5 block">Цвет текста</label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={editStatusTextColor}
+                                    onChange={(e) => setEditStatusTextColor(e.target.value)}
+                                    className="w-7 h-7 rounded border border-green-500/20 cursor-pointer bg-transparent"
+                                  />
+                                  <Input
+                                    value={editStatusTextColor}
+                                    onChange={(e) => setEditStatusTextColor(e.target.value)}
+                                    className="h-7 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono text-xs"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleDeleteStatus(st.id, st.isDefault)}
-                                className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                                onClick={handleSaveEditStatus}
+                                className="px-3 py-1 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-mono transition-colors"
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                Сохранить
                               </button>
-                            )}
+                              <button
+                                onClick={() => setEditingStatusId(null)}
+                                className="px-3 py-1 rounded-lg hover:bg-red-500/10 text-red-400 text-xs font-mono transition-colors"
+                              >
+                                Отмена
+                              </button>
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full font-semibold border ml-auto"
+                                style={{
+                                  backgroundColor: editStatusColor + '33',
+                                  color: editStatusTextColor,
+                                  borderColor: editStatusColor + '55',
+                                }}
+                              >
+                                {editStatusLabel || '...'}
+                              </span>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          /* View mode */
+                          <div key={st.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-green-500/5">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="text-xs px-3 py-1 rounded-full font-semibold border"
+                                style={{
+                                  backgroundColor: st.color + '33',
+                                  color: st.textColor,
+                                  borderColor: st.color + '55',
+                                }}
+                              >
+                                {st.label}
+                              </span>
+                              <span className="text-xs text-green-600 font-mono">{st.key}</span>
+                              {st.isDefault && <span className="text-[10px] text-muted-foreground">по умолч.</span>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: st.color }} />
+                              <button
+                                onClick={() => handleEditStatus(st)}
+                                className="p-1 rounded hover:bg-green-500/20 transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-green-400" />
+                              </button>
+                              {!st.isDefault && (
+                                <button
+                                  onClick={() => handleDeleteStatus(st.id, st.isDefault)}
+                                  className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
                       ))}
                     </div>
                   </div>

@@ -1598,6 +1598,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-6 w-6 shrink-0">
+                              {comment.user.image && <AvatarImage src={comment.user.image} alt={comment.user.username} />}
                               <AvatarFallback className="bg-blue-500/20 dark:bg-blue-500/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold">
                                 {comment.user.username.charAt(0).toUpperCase()}
                               </AvatarFallback>

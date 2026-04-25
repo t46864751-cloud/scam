@@ -24,7 +24,7 @@ export async function GET() {
       take: 100,
       include: {
         user: {
-          select: { id: true, username: true, role: true },
+          select: { id: true, username: true, role: true, image: true },
         },
         scammer: {
           select: { id: true, name: true },
@@ -109,6 +109,34 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 })
   } catch (error) {
     console.error('Panel comments PUT error:', error)
+    return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
+  }
+}
+
+// DELETE: delete a comment (admin only)
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await checkAdmin()
+    if (!user) {
+      return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Не указан ID' }, { status: 400 })
+    }
+
+    const comment = await db.comment.findUnique({ where: { id } })
+    if (!comment) {
+      return NextResponse.json({ error: 'Комментарий не найден' }, { status: 404 })
+    }
+
+    await db.comment.delete({ where: { id } })
+    return NextResponse.json({ message: 'Комментарий удалён' })
+  } catch (error) {
+    console.error('Panel comments DELETE error:', error)
     return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
   }
 }

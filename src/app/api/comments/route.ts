@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
         where: { scammerId, approved: true, hidden: false },
         include: {
           user: {
-            select: { id: true, username: true },
+            select: { id: true, username: true, image: true },
           },
         },
         orderBy: { createdAt: 'desc' },
