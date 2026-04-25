@@ -391,8 +391,6 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 function TiltCard({ children, className = '', enabled = true, ...props }: { children: React.ReactNode; className?: string; enabled?: boolean } & React.HTMLAttributes<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
-  const touchPausedRef = useRef(false)
-  const phaseRef = useRef(0)
 
   useEffect(() => {
     if (!enabled) return
@@ -401,7 +399,7 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
-    // Create subtle glare overlay
+    // Create glare overlay
     let glareEl = el.querySelector('.tilt-glare') as HTMLElement
     if (!glareEl) {
       glareEl = document.createElement('div')
@@ -409,7 +407,7 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       glareEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;overflow:hidden;z-index:10;'
       const glareInner = document.createElement('div')
       glareInner.className = 'tilt-glare-inner'
-      glareInner.style.cssText = 'position:absolute;width:200%;height:200%;top:-50%;left:-50%;background:radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);opacity:0;transition:opacity 0.3s;'
+      glareInner.style.cssText = 'position:absolute;width:200%;height:200%;top:-50%;left:-50%;background:radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);opacity:0;transition:opacity 0.3s;'
       glareEl.appendChild(glareInner)
       el.style.position = el.style.position || 'relative'
       el.style.overflow = 'hidden'
@@ -417,34 +415,59 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
     }
     const glareInner = glareEl.querySelector('.tilt-glare-inner') as HTMLElement
 
-    // ---- DESKTOP: Mouse follow tilt ----
+    // Create holographic rainbow overlay
+    let holoEl = el.querySelector('.tilt-holo') as HTMLElement
+    if (!holoEl) {
+      holoEl = document.createElement('div')
+      holoEl.className = 'tilt-holo'
+      holoEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:9;opacity:0;transition:opacity 0.4s;background:linear-gradient(125deg, rgba(96,165,250,0.07) 0%, rgba(168,85,247,0.09) 25%, rgba(236,72,153,0.07) 50%, rgba(34,211,238,0.09) 75%, rgba(96,165,250,0.07) 100%);background-size:200% 200%;mix-blend-mode:overlay;'
+      el.appendChild(holoEl)
+    }
+
+    // Create edge glow
+    let glowEl = el.querySelector('.tilt-glow') as HTMLElement
+    if (!glowEl) {
+      glowEl = document.createElement('div')
+      glowEl.className = 'tilt-glow'
+      glowEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;opacity:0;transition:opacity 0.4s;box-shadow:inset 0 0 30px rgba(96,165,250,0.1), inset 0 0 60px rgba(139,92,246,0.06);'
+      el.appendChild(glowEl)
+    }
+
+    // ---- DESKTOP: Mouse follow ----
     if (!isTouchDevice) {
       const handleMove = (e: MouseEvent) => {
         if (!el) return
         const rect = el.getBoundingClientRect()
         const x = (e.clientX - rect.left) / rect.width
         const y = (e.clientY - rect.top) / rect.height
-        const tiltX = (0.5 - y) * 12
-        const tiltY = (x - 0.5) * 12
-        const sc = 1 + Math.abs(x - 0.5) * 0.03 + Math.abs(y - 0.5) * 0.03
+        const tiltX = (0.5 - y) * 18
+        const tiltY = (x - 0.5) * 18
+        const sc = 1 + Math.abs(x - 0.5) * 0.05 + Math.abs(y - 0.5) * 0.05
         el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
-        el.style.transition = 'transform 0.1s ease-out'
+        el.style.transition = 'transform 0.08s ease-out'
         
         const glareX = x * 100
         const glareY = y * 100
-        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0) 60%)`
+        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 60%)`
+        holoEl.style.backgroundPosition = `${50 + (x - 0.5) * 80}% ${50 + (y - 0.5) * 80}%`
         glareEl.style.opacity = '1'
+        glowEl.style.opacity = '1'
+        holoEl.style.opacity = '1'
       }
 
       const handleEnter = () => {
         glareEl.style.opacity = '1'
+        glowEl.style.opacity = '1'
+        holoEl.style.opacity = '1'
       }
 
       const handleLeave = () => {
         if (!el) return
-        el.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
+        el.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)'
         el.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
         glareEl.style.opacity = '0'
+        glowEl.style.opacity = '0'
+        holoEl.style.opacity = '0'
       }
 
       el.addEventListener('mousemove', handleMove)
@@ -458,48 +481,33 @@ function TiltCard({ children, className = '', enabled = true, ...props }: { chil
       }
     }
 
-    // ---- TOUCH: Smooth auto-rotate + pause on scroll ----
+    // ---- TOUCH: Continuous auto-rotate, no pause ----
     let running = true
-    phaseRef.current = Math.random() * Math.PI * 2
+    let phase = Math.random() * Math.PI * 2
 
     const autoRotate = () => {
-      if (!running) return
-      if (!touchPausedRef.current && el) {
-        phaseRef.current += 0.008
-        const t = phaseRef.current
-        const tiltX = Math.sin(t * 0.7) * 8
-        const tiltY = Math.cos(t * 0.5) * 6
-        el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
+      if (!running || !el) return
+      phase += 0.01
+      const tiltX = Math.sin(phase * 0.7) * 12
+      const tiltY = Math.cos(phase * 0.5) * 10
+      const sc = 1.04 + Math.sin(phase * 0.3) * 0.02
+      el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${sc}, ${sc}, ${sc})`
 
-        const glareX = 50 + Math.sin(t * 0.7) * 30
-        const glareY = 50 + Math.cos(t * 0.5) * 30
-        glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0) 60%)`
-        glareEl.style.opacity = '1'
-      }
+      const glareX = 50 + Math.sin(phase * 0.7) * 35
+      const glareY = 50 + Math.cos(phase * 0.5) * 35
+      glareInner.style.background = `radial-gradient(ellipse at ${glareX}% ${glareY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 60%)`
+      holoEl.style.backgroundPosition = `${50 + Math.sin(phase * 0.4) * 40}% ${50 + Math.cos(phase * 0.3) * 40}%`
+      glareEl.style.opacity = '1'
+      glowEl.style.opacity = '1'
+      holoEl.style.opacity = '0.8'
+
       rafRef.current = requestAnimationFrame(autoRotate)
     }
     autoRotate()
 
-    const handleTouchStart = () => {
-      touchPausedRef.current = true
-      if (el) {
-        el.style.transition = 'transform 0.3s ease-out'
-        el.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)'
-        glareEl.style.opacity = '0'
-      }
-    }
-    const handleTouchEnd = () => {
-      setTimeout(() => { touchPausedRef.current = false }, 800)
-    }
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true })
-    el.addEventListener('touchend', handleTouchEnd, { passive: true })
-
     return () => {
       running = false
       cancelAnimationFrame(rafRef.current)
-      el.removeEventListener('touchstart', handleTouchStart)
-      el.removeEventListener('touchend', handleTouchEnd)
     }
   }, [])
 
@@ -615,9 +623,9 @@ function FloatingScammers() {
                   className="snap-start shrink-0"
                   style={{ width: '180px' }}
                 >
-                  <div
+                  <TiltCard
                     onClick={() => setSelectedScammer(scammer)}
-                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98]`}
+                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
                   >
                     {/* Avatar + status */}
                     <div className="flex items-center gap-2 mb-3">
@@ -651,7 +659,7 @@ function FloatingScammers() {
                       </span>
                       <span>{scammer.searchCount} поисков</span>
                     </div>
-                  </div>
+                  </TiltCard>
                 </motion.div>
               ))}
               {/* Loading indicator at the end */}
@@ -900,30 +908,33 @@ function SearchView() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => setSelectedScammer(scammer)}
-                  className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300 active:scale-[0.98]"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <Avatar className="h-10 w-10 shrink-0">
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold">
-                          {scammer.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{scammer.name}</p>
-                        <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
+                  <TiltCard
+                    onClick={() => setSelectedScammer(scammer)}
+                    className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-semibold">
+                            {scammer.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{scammer.name}</p>
+                          <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <StatusBadge status={scammer.statusLabel || scammer.status} color={scammer.statusColor} textColor={scammer.statusTextColor} />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <StatusBadge status={scammer.statusLabel || scammer.status} color={scammer.statusColor} textColor={scammer.statusTextColor} />
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    {/* Like/Dislike bar */}
+                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+                      <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
                     </div>
-                  </div>
-                  {/* Like/Dislike bar */}
-                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-                    <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
-                  </div>
+                  </TiltCard>
                 </motion.div>
               ))
             ) : (
@@ -1014,43 +1025,46 @@ function Top10View() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
-              onClick={() => setSelectedScammer(item)}
-              className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-all duration-300 active:scale-[0.98]"
             >
-              <div className="flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <Avatar className="h-11 w-11">
-                    <AvatarFallback
-                      className={`font-bold text-white ${
-                        i === 0
-                          ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                          : i === 1
-                          ? 'bg-gradient-to-br from-gray-300 to-gray-400'
-                          : i === 2
-                          ? 'bg-gradient-to-br from-amber-600 to-amber-700'
-                          : 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50'
-                      }`}
-                    >
-                      {i + 1}
-                    </AvatarFallback>
-                  </Avatar>
-                  {i < 3 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: i * 0.1 + 0.3 }}
-                      className="absolute -top-1 -right-1 text-xs"
-                    >
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                    </motion.div>
-                  )}
+              <TiltCard
+                onClick={() => setSelectedScammer(item)}
+                className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <Avatar className="h-11 w-11">
+                      <AvatarFallback
+                        className={`font-bold text-white ${
+                          i === 0
+                            ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
+                            : i === 1
+                            ? 'bg-gradient-to-br from-gray-300 to-gray-400'
+                            : i === 2
+                            ? 'bg-gradient-to-br from-amber-600 to-amber-700'
+                            : 'bg-gradient-to-br from-blue-500/50 to-cyan-500/50'
+                        }`}
+                      >
+                        {i + 1}
+                      </AvatarFallback>
+                    </Avatar>
+                    {i < 3 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: i * 0.1 + 0.3 }}
+                        className="absolute -top-1 -right-1 text-xs"
+                      >
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                      </motion.div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">{item.totalSearches} поисков</p>
+                  </div>
+                  <StatusBadge status={item.statusLabel || item.status} color={item.statusColor} textColor={item.statusTextColor} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.totalSearches} поисков</p>
-                </div>
-                <StatusBadge status={item.statusLabel || item.status} color={item.statusColor} textColor={item.statusTextColor} />
-              </div>
+              </TiltCard>
             </motion.div>
           ))}
         </div>
