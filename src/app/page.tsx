@@ -920,7 +920,7 @@ function SearchView() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <TiltCard
+                  <div
                     onClick={() => setSelectedScammer(scammer)}
                     className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
                   >
@@ -945,7 +945,7 @@ function SearchView() {
                     <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
                       <LikeButton scammerId={scammer.id} initialLikes={scammer.likeCount || 0} initialDislikes={scammer.dislikeCount || 0} />
                     </div>
-                  </TiltCard>
+                  </div>
                 </motion.div>
               ))
             ) : (
