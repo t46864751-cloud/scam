@@ -1366,6 +1366,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
   const isLoggedIn = !!session?.user
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -1664,6 +1665,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
       scammer={showNameHistory ? scammer : null}
       onClose={() => setShowNameHistory(false)}
     />
+    </>
   )
 }
 
