@@ -42,6 +42,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import UserNameHistoryModal from '@/components/UserNameHistoryModal'
 
 // ==================== TYPES ====================
 interface ScammerResult {
@@ -981,6 +982,7 @@ function SearchView() {
 // ==================== TOP 10 VIEW ====================
 function Top10View() {
   const { setSelectedScammer } = useAppStore()
+  const tiltTop10 = useAppStore((s) => s.tiltTop10)
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -1036,6 +1038,7 @@ function Top10View() {
               transition={{ delay: i * 0.05 }}
             >
               <TiltCard
+                enabled={tiltTop10}
                 onClick={() => setSelectedScammer(item)}
                 className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
               >
@@ -1290,6 +1293,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
   const [commentPage, setCommentPage] = useState(1)
   const [commentTotalPages, setCommentTotalPages] = useState(1)
   const [commentTotal, setCommentTotal] = useState(0)
+  const [showNameHistory, setShowNameHistory] = useState(false)
 
   const loadComments = useCallback((scammerId: string, page: number) => {
     setLoadingComments(true)
@@ -1417,12 +1421,21 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   </div>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ml-2"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <button
+                  onClick={() => setShowNameHistory(true)}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors"
+                  title="История имён"
+                >
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Telegram User ID */}
@@ -1647,6 +1660,10 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
           </TiltCard>
         </motion.div>
     </motion.div>
+    <UserNameHistoryModal
+      scammer={showNameHistory ? scammer : null}
+      onClose={() => setShowNameHistory(false)}
+    />
   )
 }
 
@@ -1762,6 +1779,8 @@ function ProfileView({ user }: { user: any }) {
   const { update } = useSession()
   const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const setTiltEnabled = useAppStore((s) => s.setTiltEnabled)
+  const tiltTop10 = useAppStore((s) => s.tiltTop10)
+  const setTiltTop10 = useAppStore((s) => s.setTiltTop10)
   const [showAuth, setShowAuth] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -1942,6 +1961,36 @@ function ProfileView({ user }: { user: any }) {
             layout
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md ${tiltEnabled ? 'left-6' : 'left-1'}`}
+          />
+        </button>
+      </div>
+
+      {/* 3D Top-10 toggle */}
+      <div className="flex items-center justify-between py-3 border-t border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
+            <span className="text-base">🏆</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold">3D эффект в Топ-10</p>
+            <p className="text-[11px] text-muted-foreground">{tiltTop10 ? 'Включен' : 'Выключен'}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            const newVal = !tiltTop10
+            setTiltTop10(newVal)
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('tiltTop10', String(newVal))
+            }
+            toast.success(newVal ? '3D в Топ-10 включен' : '3D в Топ-10 выключен')
+          }}
+          className={`relative w-12 h-7 rounded-full transition-colors duration-300 ${tiltTop10 ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-muted'}`}
+        >
+          <motion.div
+            layout
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md ${tiltTop10 ? 'left-6' : 'left-1'}`}
           />
         </button>
       </div>
@@ -2403,10 +2452,10 @@ function LoadingSpinner() {
 // ==================== MAIN APP ====================
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer, tiltEnabled, setTiltEnabled } = useAppStore()
+  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer, tiltEnabled, setTiltEnabled, tiltTop10, setTiltTop10 } = useAppStore()
   const [showTiltChoice, setShowTiltChoice] = useState(false)
 
-  // Load tilt preference from localStorage on mount
+  // Load tilt preferences from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
     const saved = localStorage.getItem('tiltEnabled')
@@ -2416,7 +2465,11 @@ export default function Home() {
     } else {
       setTiltEnabled(saved === 'true')
     }
-  }, [setTiltEnabled])
+    const savedTop10 = localStorage.getItem('tiltTop10')
+    if (savedTop10 !== null) {
+      setTiltTop10(savedTop10 === 'true')
+    }
+  }, [setTiltEnabled, setTiltTop10])
 
   const handleTiltChoice = (enabled: boolean) => {
     setTiltEnabled(enabled)

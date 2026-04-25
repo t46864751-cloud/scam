@@ -15,6 +15,8 @@ interface AppState {
   setSearchQuery: (q: string) => void
   tiltEnabled: boolean | null // null = not yet chosen
   setTiltEnabled: (v: boolean) => void
+  tiltTop10: boolean
+  setTiltTop10: (v: boolean) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -28,4 +30,6 @@ export const useAppStore = create<AppState>((set) => ({
   setSearchQuery: (q) => set({ searchQuery: q }),
   tiltEnabled: null,
   setTiltEnabled: (v) => set({ tiltEnabled: v }),
+  tiltTop10: true,
+  setTiltTop10: (v) => set({ tiltTop10: v }),
 }))
