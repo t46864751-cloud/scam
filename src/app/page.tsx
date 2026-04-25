@@ -557,9 +557,9 @@ function FloatingScammers() {
       className="mt-6"
     >
       {/* Cosmic container */}
-      <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: '320px' }}>
+      <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: '200px' }}>
         {/* Starfield background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/40 via-indigo-50/20 to-gray-100/60 dark:from-blue-950/40 dark:via-purple-950/20 dark:to-black/60 rounded-3xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/40 via-indigo-50/20 to-gray-100/60 dark:from-blue-950/40 dark:via-purple-950/20 dark:to-gray-950/30 rounded-3xl overflow-hidden">
           <div className="stars-layer" />
         </div>
 
@@ -572,7 +572,7 @@ function FloatingScammers() {
           </div>
 
           {loading && scammers.length === 0 ? (
-            <div className="flex items-center justify-center" style={{ height: '260px' }}>
+            <div className="flex items-center justify-center" style={{ height: '180px' }}>
               <Loader2 className="w-6 h-6 animate-spin text-blue-500/50" />
             </div>
           ) : (
