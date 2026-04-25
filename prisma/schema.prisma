@@ -43,6 +43,19 @@ model Scammer {
   searchLogs  SearchLog[]
   comments    Comment[]
   votes       Vote[]
+  nameHistory ScammerNameHistory[]
+}
+
+model ScammerNameHistory {
+  id        String   @id @default(cuid())
+  scammerId String
+  oldName   String
+  newName   String
+  createdAt DateTime @default(now())
+
+  scammer Scammer @relation(fields: [scammerId], references: [id], onDelete: Cascade)
+
+  @@index([scammerId])
 }
 
 model Submission {

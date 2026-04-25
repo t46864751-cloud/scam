@@ -11,7 +11,7 @@ import {
   Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
-  Download,
+  Download, History,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -453,6 +453,15 @@ export default function PanelPage() {
   const [editScamDate, setEditScamDate] = useState('')
   const [editProofLink, setEditProofLink] = useState('')
   const [editTelegramUserId, setEditTelegramUserId] = useState('')
+
+  // Name history
+  const [nameHistoryScammer, setNameHistoryScammer] = useState<{ id: string; name: string } | null>(null)
+  const [nameHistory, setNameHistory] = useState<any[]>([])
+  const [nameHistoryLoading, setNameHistoryLoading] = useState(false)
+  const [nameHistoryPage, setNameHistoryPage] = useState(1)
+  const [nameHistoryTotalPages, setNameHistoryTotalPages] = useState(1)
+  const [nameHistoryTotal, setNameHistoryTotal] = useState(0)
+  const [rollbackLoading, setRollbackLoading] = useState<string | null>(null)
 
   // Comments moderation
   const [comments, setComments] = useState<any[]>([])
@@ -919,6 +928,44 @@ export default function PanelPage() {
     setEditTelegramUserId(scammer.telegramUserId || '')
   }
 
+  const loadNameHistory = useCallback(async (scammerId: string, page: number) => {
+    setNameHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/panel/scammer-name-history?scammerId=${scammerId}&page=${page}&limit=15`)
+      const data = await res.json()
+      if (data.results) setNameHistory(data.results)
+      setNameHistoryTotalPages(data.totalPages || 1)
+      setNameHistoryTotal(data.total || 0)
+    } catch { toast.error('Ошибка загрузки истории') }
+    finally { setNameHistoryLoading(false) }
+  }, [])
+
+  const openNameHistory = (scammerId: string, scammerName: string) => {
+    setNameHistoryScammer({ id: scammerId, name: scammerName })
+    setNameHistoryPage(1)
+    setNameHistory([])
+    loadNameHistory(scammerId, 1)
+  }
+
+  const handleRollback = async (historyId: string, oldName: string) => {
+    if (!confirm(`Откатить имя на «${oldName}»?`)) return
+    setRollbackLoading(historyId)
+    try {
+      const res = await fetch('/api/panel/scammer-name-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyId }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      // Reload history and scammer list
+      if (nameHistoryScammer) loadNameHistory(nameHistoryScammer.id, nameHistoryPage)
+      loadScammers(scammerPage, scammerSearch)
+    } catch { toast.error('Ошибка') }
+    finally { setRollbackLoading(null) }
+  }
+
   const statusBadge = (status: string, label?: string, color?: string, textColor?: string) => {
     const displayLabel = label || status
     const style = color ? {
@@ -1285,6 +1332,13 @@ export default function PanelPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               {statusBadge(s.status, s.statusLabel, s.statusColor, s.statusTextColor)}
+                              <button
+                                onClick={() => openNameHistory(s.id, s.name)}
+                                className="p-2 rounded-lg hover:bg-blue-500/10 transition-colors"
+                                title="История имён"
+                              >
+                                <History className="w-4 h-4 text-blue-400 hover:text-blue-300" />
+                              </button>
                               <button
                                 onClick={() => startEdit(s)}
                                 className="p-2 rounded-lg hover:bg-green-500/10 transition-colors"
@@ -2168,6 +2222,135 @@ export default function PanelPage() {
                   </Button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Name History Modal */}
+      <AnimatePresence>
+        {nameHistoryScammer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setNameHistoryScammer(null)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-lg glass rounded-2xl p-6 border border-blue-500/20 max-h-[85dvh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <History className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-mono font-bold text-blue-300">История имён</h3>
+                    <p className="text-xs font-mono text-green-600">{nameHistoryScammer.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setNameHistoryScammer(null)} className="p-1.5 rounded-lg hover:bg-blue-500/10 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {nameHistoryLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                </div>
+              ) : nameHistory.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="font-mono text-green-600 text-sm">Имя никогда не менялось</p>
+                  <p className="font-mono text-green-700 text-xs mt-1">Изменения имени будут отображаться здесь</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs font-mono text-green-600 mb-3">Всего изменений: {nameHistoryTotal}</p>
+                  <div className="space-y-2">
+                    {nameHistory.map((entry: any, i: number) => (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="glass rounded-xl p-3 border border-green-500/10 group hover:border-blue-500/20 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="flex flex-col items-center gap-0.5 shrink-0">
+                              <div className="w-7 h-7 rounded-md bg-red-500/15 flex items-center justify-center">
+                                <span className="text-[10px] font-mono text-red-400 font-bold truncate max-w-[60px]">
+                                  {entry.oldName.length > 6 ? entry.oldName.slice(0, 6) + '..' : entry.oldName}
+                                </span>
+                              </div>
+                            </div>
+                            <ArrowLeft className="w-3.5 h-3.5 text-green-600 shrink-0 rotate-180" />
+                            <div className="w-7 h-7 rounded-md bg-green-500/15 flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-mono text-green-400 font-bold truncate max-w-[60px]">
+                                {entry.newName.length > 6 ? entry.newName.slice(0, 6) + '..' : entry.newName}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1 ml-1">
+                              <p className="text-xs font-mono text-green-200 truncate">
+                                <span className="text-red-400">{entry.oldName}</span>
+                                <span className="text-green-600 mx-1.5">→</span>
+                                <span className="text-green-300">{entry.newName}</span>
+                              </p>
+                              <p className="text-[10px] font-mono text-green-700 mt-0.5">
+                                {new Date(entry.createdAt).toLocaleString('ru-RU', {
+                                  day: 'numeric', month: 'short', year: 'numeric',
+                                  hour: '2-digit', minute: '2-digit',
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRollback(entry.id, entry.oldName)}
+                            disabled={rollbackLoading === entry.id}
+                            className="opacity-0 group-hover:opacity-100 shrink-0 px-3 py-1.5 rounded-lg font-mono text-xs bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25 border border-yellow-500/20 transition-all disabled:opacity-40 flex items-center gap-1.5"
+                            title={`Откатить на «${entry.oldName}»`}
+                          >
+                            {rollbackLoading === entry.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-3 h-3" />
+                            )}
+                            <span className="hidden sm:inline">Откат</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {nameHistoryTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <button
+                        onClick={() => { setNameHistoryPage(p => Math.max(1, p - 1)); if (nameHistoryScammer) loadNameHistory(nameHistoryScammer.id, Math.max(1, nameHistoryPage - 1)) }}
+                        disabled={nameHistoryPage <= 1}
+                        className="p-1.5 rounded-lg border border-green-500/20 text-green-400 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="font-mono text-xs text-green-500 px-2">{nameHistoryPage} / {nameHistoryTotalPages}</span>
+                      <button
+                        onClick={() => { setNameHistoryPage(p => Math.min(nameHistoryTotalPages, p + 1)); if (nameHistoryScammer) loadNameHistory(nameHistoryScammer.id, Math.min(nameHistoryTotalPages, nameHistoryPage + 1)) }}
+                        disabled={nameHistoryPage >= nameHistoryTotalPages}
+                        className="p-1.5 rounded-lg border border-green-500/20 text-green-400 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

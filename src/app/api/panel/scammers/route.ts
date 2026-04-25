@@ -167,7 +167,17 @@ export async function PUT(req: NextRequest) {
     }
 
     const updateData: Record<string, unknown> = {}
-    if (name !== undefined && typeof name === 'string') updateData.name = name.trim().slice(0, 200)
+    // Save name history if name changed
+    if (name !== undefined && typeof name === 'string') {
+      const newName = name.trim().slice(0, 200)
+      const existing = await db.scammer.findUnique({ where: { id }, select: { name: true } })
+      if (existing && existing.name !== newName) {
+        await db.scammerNameHistory.create({
+          data: { scammerId: id, oldName: existing.name, newName },
+        })
+      }
+      updateData.name = newName
+    }
     if (description !== undefined && typeof description === 'string') updateData.description = description.slice(0, 2000)
     if (status !== undefined) {
       // Get valid statuses from DB (supports custom statuses created by admin)
