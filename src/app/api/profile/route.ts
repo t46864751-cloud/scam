@@ -14,13 +14,14 @@ export async function PUT(request: Request) {
     const { image } = body
 
     if (image !== undefined) {
-      if (image && !image.match(/^https?:\/\/.+/)) {
+      const trimmed = typeof image === 'string' ? image.trim() : ''
+      if (trimmed && !trimmed.match(/^https?:\/\/.+/)) {
         return NextResponse.json({ error: 'Неверная ссылка на изображение' }, { status: 400 })
       }
 
       await db.user.update({
         where: { id: session.user.userId },
-        data: { image: image || '' },
+        data: { image: trimmed },
       })
     }
 
@@ -52,13 +53,14 @@ export async function DELETE() {
       }
     }
 
-    // Delete user and all related data
-    await db.comment.deleteMany({ where: { userId } })
-    await db.submission.deleteMany({ where: { userId } })
-    await db.searchLog.deleteMany({ where: { userId } })
-    await db.vote.deleteMany({ where: { userId } })
-    await db.complaint.deleteMany({ where: { userId } })
-    await db.user.delete({ where: { id: userId } })
+    // Delete user and all related data (Complaint has no userId field)
+    await db.$transaction([
+      db.comment.deleteMany({ where: { userId } }),
+      db.submission.deleteMany({ where: { userId } }),
+      db.searchLog.deleteMany({ where: { userId } }),
+      db.vote.deleteMany({ where: { voterId: { startsWith: `user:${userId}` } } }),
+      db.user.delete({ where: { id: userId } }),
+    ])
 
     return NextResponse.json({ message: 'Аккаунт удалён' })
   } catch (error) {

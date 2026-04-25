@@ -1791,6 +1791,12 @@ function ProfileView({ user }: { user: any }) {
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [showAvatarEdit, setShowAvatarEdit] = useState(false)
 
+  // Sync avatarUrl when session user image changes (e.g. after update())
+  useEffect(() => {
+    const img = (user as any)?.image || ''
+    if (img) setAvatarUrl(img)
+  }, [user])
+
   useEffect(() => {
     if (!user) return
     async function load() {
@@ -1850,12 +1856,17 @@ function ProfileView({ user }: { user: any }) {
   }
 
   const handleSaveAvatar = async () => {
+    const url = avatarUrl.trim()
+    if (url && !url.match(/^https?:\/\/.+/)) {
+      toast.error('Введите корректную ссылку (https://...)')
+      return
+    }
     setAvatarSaving(true)
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: avatarUrl }),
+        body: JSON.stringify({ image: url }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -2161,7 +2172,8 @@ function ProfileView({ user }: { user: any }) {
 function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scammerId: string; initialLikes: number; initialDislikes: number; large?: boolean }) {
   const [likes, setLikes] = useState(initialLikes)
   const [dislikes, setDislikes] = useState(initialDislikes)
-  const [myVote, setMyVote] = useState<'like' | 'dislike' | null>(null)
+  const [neutrals, setNeutrals] = useState(0)
+  const [myVote, setMyVote] = useState<'like' | 'neutral' | 'dislike' | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -2173,11 +2185,12 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
         setMyVote(d.voteType)
         if (d.likeCount !== undefined) setLikes(d.likeCount)
         if (d.dislikeCount !== undefined) setDislikes(d.dislikeCount)
+        if (d.neutralCount !== undefined) setNeutrals(d.neutralCount)
       })
       .catch(() => {})
   }, [scammerId, initialLikes, initialDislikes])
 
-  const handleVote = async (type: 'like' | 'dislike') => {
+  const handleVote = async (type: 'like' | 'neutral' | 'dislike') => {
     if (loading) return
     setLoading(true)
     try {
@@ -2190,6 +2203,7 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
       if (!res.ok) { toast.error(data.error); return }
       setLikes(data.likeCount)
       setDislikes(data.dislikeCount)
+      setNeutrals(data.neutralCount)
       setMyVote(data.voted ? data.voteType : null)
     } catch {
       toast.error('Ошибка')
@@ -2198,15 +2212,16 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
     }
   }
 
-  const sz = large ? 'gap-3 px-3 py-2' : 'gap-1.5 px-2 py-1'
-  const iconSz = large ? 'w-5 h-5' : 'w-4 h-4'
-  const numSz = large ? 'text-sm font-bold' : 'text-xs font-semibold'
+  const sz = large ? 'gap-2 px-3 py-2' : 'gap-1 px-2 py-1'
+  const iconSz = large ? 'w-5 h-5' : 'w-3.5 h-3.5'
+  const numSz = large ? 'text-sm font-bold' : 'text-[11px] font-semibold'
+  const btnPad = large ? 'px-2.5 py-1.5' : 'px-2 py-1'
 
   return (
     <div className={`flex items-center ${sz}`}>
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('like') }}
-        className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition-all ${
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
           myVote === 'like' ? 'text-green-600 dark:text-green-400 bg-green-500/10 dark:bg-green-500/20' : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-400 hover:bg-green-500/10'
         } ${loading ? 'opacity-50' : ''}`}
       >
@@ -2214,8 +2229,17 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
         <span className={numSz}>{likes}</span>
       </button>
       <button
+        onClick={(e) => { e.stopPropagation(); handleVote('neutral') }}
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
+          myVote === 'neutral' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 dark:bg-yellow-500/20' : 'text-muted-foreground hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-500/10'
+        } ${loading ? 'opacity-50' : ''}`}
+      >
+        <span className={`${iconSz} font-bold leading-none`}>~</span>
+        <span className={numSz}>{neutrals}</span>
+      </button>
+      <button
         onClick={(e) => { e.stopPropagation(); handleVote('dislike') }}
-        className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 transition-all ${
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
           myVote === 'dislike' ? 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' : 'text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10'
         } ${loading ? 'opacity-50' : ''}`}
       >

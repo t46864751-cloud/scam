@@ -29,6 +29,7 @@ model Scammer {
   status       String   @default("scam") // "verified", "scam", "not_in_db"
   searchCount  Int      @default(0)
   likeCount    Int      @default(0)
+  neutralCount Int      @default(0)
   dislikeCount Int      @default(0)
   screenshots  String   @default("[]") // JSON array of URLs
   scammerType  String   @default("") // "Бот" or "Человек"
@@ -103,7 +104,7 @@ model Comment {
 model Vote {
   id        String   @id @default(cuid())
   scammerId String
-  voteType  String   // "like" or "dislike"
+  voteType  String   // "like", "neutral", or "dislike"
   voterId   String   // "user:{userId}" or "ip:{ip}"
   createdAt DateTime @default(now())
 
