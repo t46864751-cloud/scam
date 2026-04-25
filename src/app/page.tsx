@@ -388,12 +388,13 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 }
 
 // ==================== 3D TILT CARD ====================
-function TiltCard({ children, className = '', ...props }: { children: React.ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
+function TiltCard({ children, className = '', enabled = true, ...props }: { children: React.ReactNode; className?: string; enabled?: boolean } & React.HTMLAttributes<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
   const isTouchRef = useRef(false)
 
   useEffect(() => {
+    if (!enabled) return
     const el = ref.current
     if (!el) return
 
@@ -498,6 +499,7 @@ function TiltCard({ children, className = '', ...props }: { children: React.Reac
 // ==================== FLOATING SCAMMERS ====================
 function FloatingScammers() {
   const { setSelectedScammer } = useAppStore()
+  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const [scammers, setScammers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -602,6 +604,7 @@ function FloatingScammers() {
                 >
                   <TiltCard
                     onClick={() => setSelectedScammer(scammer)}
+                    enabled={tiltEnabled !== false}
                     className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
                   >
                     {/* Avatar + status */}
@@ -1246,6 +1249,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 // ==================== SCAMER DETAIL MODAL ====================
 function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => void }) {
   const { data: session } = useSession()
+  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
   const [comments, setComments] = useState<CommentItem[]>([])
   const [newComment, setNewComment] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
@@ -1355,7 +1359,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
         onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
       >
-          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <TiltCard enabled={tiltEnabled !== false} className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 min-w-0">
@@ -1723,6 +1727,8 @@ function StatsView() {
 // ==================== PROFILE VIEW ====================
 function ProfileView({ user }: { user: any }) {
   const { update } = useSession()
+  const tiltEnabled = useAppStore((s) => s.tiltEnabled)
+  const setTiltEnabled = useAppStore((s) => s.setTiltEnabled)
   const [showAuth, setShowAuth] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
@@ -1875,6 +1881,36 @@ function ProfileView({ user }: { user: any }) {
             </Badge>
           </div>
         </div>
+      </div>
+
+      {/* 3D tilt toggle */}
+      <div className="glass rounded-2xl p-4 mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+            <span className="text-base">✨</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold">3D эффект карточек</p>
+            <p className="text-[11px] text-muted-foreground">{tiltEnabled ? 'Включен' : 'Выключен'}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            const newVal = !tiltEnabled
+            setTiltEnabled(newVal)
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('tiltEnabled', String(newVal))
+            }
+            toast.success(newVal ? '3D эффект включен' : '3D эффект выключен')
+          }}
+          className={`relative w-12 h-7 rounded-full transition-colors duration-300 ${tiltEnabled ? 'bg-gradient-to-r from-blue-600 to-cyan-500' : 'bg-muted'}`}
+        >
+          <motion.div
+            layout
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md ${tiltEnabled ? 'left-6' : 'left-1'}`}
+          />
+        </button>
       </div>
 
       {/* Avatar edit modal */}
@@ -2236,6 +2272,92 @@ function BottomNav() {
   )
 }
 
+// ==================== 3D TILT CHOICE DIALOG ====================
+function TiltChoiceDialog({ onChoose }: { onChoose: (enabled: boolean) => void }) {
+  const [preview3D, setPreview3D] = useState(true)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="relative z-10 w-full max-w-sm"
+      >
+        <div className="glass-strong rounded-3xl p-6 text-center">
+          <div className="mb-5">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <span className="text-2xl">✨</span>
+            </div>
+            <h3 className="text-xl font-bold mb-1">3D эффект карточек</h3>
+            <p className="text-sm text-muted-foreground">Включить крутой 3D наклон карточек?</p>
+          </div>
+
+          {/* Live preview */}
+          <div className="relative mb-5 p-3 rounded-2xl bg-gradient-to-b from-blue-50/40 to-gray-100/60 dark:from-blue-950/40 dark:to-gray-950/30">
+            <motion.div
+              key={preview3D ? '3d' : 'flat'}
+              initial={{ scale: 0.92, opacity: 0.5 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            >
+              <TiltCard
+                enabled={preview3D}
+                className="rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 backdrop-blur-md border border-border p-4"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">S</div>
+                  <div>
+                    <p className="font-semibold text-sm">Пример карточки</p>
+                    <p className="text-[10px] text-muted-foreground">Наведите чтобы увидеть</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>123 поисков</span>
+                  <span>•</span>
+                  <span>45 лайков</span>
+                </div>
+              </TiltCard>
+            </motion.div>
+            <p className="text-[10px] text-muted-foreground/60 mt-2">
+              {preview3D ? 'Наведите на карточку — 3D эффект активен' : 'Обычный вид без 3D'}
+            </p>
+          </div>
+
+          {/* Toggle preview */}
+          <button
+            onClick={() => setPreview3D(!preview3D)}
+            className="w-full mb-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary transition-colors"
+          >
+            {preview3D ? 'Посмотреть без 3D' : 'Посмотреть с 3D'}
+          </button>
+
+          {/* Two choice buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => onChoose(false)}
+              className="flex-1 py-3 rounded-xl border border-border text-sm font-medium hover:bg-secondary transition-all"
+            >
+              Без 3D
+            </button>
+            <button
+              onClick={() => onChoose(true)}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-semibold hover:from-blue-700 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/20"
+            >
+              Включить 3D
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ==================== LOADING SPINNER ====================
 function LoadingSpinner() {
   return (
@@ -2248,7 +2370,28 @@ function LoadingSpinner() {
 // ==================== MAIN APP ====================
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer } = useAppStore()
+  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer, tiltEnabled, setTiltEnabled } = useAppStore()
+  const [showTiltChoice, setShowTiltChoice] = useState(false)
+
+  // Load tilt preference from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem('tiltEnabled')
+    if (saved === null) {
+      // First visit — show choice dialog
+      setShowTiltChoice(true)
+    } else {
+      setTiltEnabled(saved === 'true')
+    }
+  }, [setTiltEnabled])
+
+  const handleTiltChoice = (enabled: boolean) => {
+    setTiltEnabled(enabled)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('tiltEnabled', String(enabled))
+    }
+    setShowTiltChoice(false)
+  }
 
   if (status === 'loading') {
     return <LoadingSpinner />
@@ -2271,6 +2414,7 @@ export default function Home() {
       <AnimatePresence>
         {selectedScammer && <ScamerDetailModal key="detail-modal" scammer={selectedScammer} onClose={() => setSelectedScammer(null)} />}
       </AnimatePresence>
+      {showTiltChoice && <TiltChoiceDialog onChoose={handleTiltChoice} />}
     </div>
   )
 }

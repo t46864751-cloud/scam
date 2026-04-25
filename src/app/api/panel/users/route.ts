@@ -139,3 +139,53 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
   }
 }
+
+// DELETE: delete user and all related data (admin only)
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await checkAdmin()
+    if (!user) {
+      return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const targetId = searchParams.get('id')
+
+    if (!targetId) {
+      return NextResponse.json({ error: 'Не указан ID пользователя' }, { status: 400 })
+    }
+
+    const adminUserId = (user as { userId?: string; id?: string }).userId || (user as { id?: string }).id || ''
+
+    // Prevent admin from deleting themselves
+    if (targetId === adminUserId) {
+      return NextResponse.json({ error: 'Нельзя удалить свой аккаунт через админку. Используйте профиль.' }, { status: 400 })
+    }
+
+    const targetUser = await db.user.findUnique({ where: { id: targetId } })
+    if (!targetUser) {
+      return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 })
+    }
+
+    // Prevent deleting admins
+    if (targetUser.role === 'admin') {
+      const adminCount = await db.user.count({ where: { role: 'admin' } })
+      if (adminCount <= 1) {
+        return NextResponse.json({ error: 'Нельзя удалить единственного админа' }, { status: 400 })
+      }
+    }
+
+    // Delete user and all related data
+    await db.comment.deleteMany({ where: { userId: targetId } })
+    await db.submission.deleteMany({ where: { userId: targetId } })
+    await db.searchLog.deleteMany({ where: { userId: targetId } })
+    await db.vote.deleteMany({ where: { userId: targetId } })
+    await db.complaint.deleteMany({ where: { userId: targetId } })
+    await db.user.delete({ where: { id: targetId } })
+
+    return NextResponse.json({ message: 'Пользователь удалён' })
+  } catch (error) {
+    console.error('Panel users DELETE error:', error)
+    return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
+  }
+}

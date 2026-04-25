@@ -911,6 +911,18 @@ export default function PanelPage() {
     } catch { toast.error('Ошибка') }
   }
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm('Удалить пользователя ' + username + '? Все его данные будут удалены безвозвратно.')) return
+    if (!confirm('Точно удалить ' + username + '? Это действие необратимо.')) return
+    try {
+      const res = await fetch('/api/panel/users?id=' + userId, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      loadUsers(usersPage, usersSearch, usersRoleFilter)
+    } catch { toast.error('Ошибка') }
+  }
+
   const startEdit = (scammer: Scammer) => {
     setEditScammer(scammer)
     setEditName(scammer.name)
@@ -1457,6 +1469,15 @@ export default function PanelPage() {
                                       Забанить
                                     </Button>
                                   )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeleteUser(u.id, u.username)}
+                                    className="h-8 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400 font-mono text-[10px] rounded-lg"
+                                  >
+                                    <Trash2 className="w-3 h-3 mr-1" />
+                                    Удалить
+                                  </Button>
                                 </div>
                               )}
                             </div>

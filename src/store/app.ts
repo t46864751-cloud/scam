@@ -13,6 +13,8 @@ interface AppState {
   setCreateModalOpen: (open: boolean) => void
   searchQuery: string
   setSearchQuery: (q: string) => void
+  tiltEnabled: boolean | null // null = not yet chosen
+  setTiltEnabled: (v: boolean) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -24,4 +26,6 @@ export const useAppStore = create<AppState>((set) => ({
   setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
+  tiltEnabled: null,
+  setTiltEnabled: (v) => set({ tiltEnabled: v }),
 }))

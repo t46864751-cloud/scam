@@ -190,13 +190,13 @@
               inset 0 -1px 0 rgba(0, 0, 0, 0.02);
 }
 
-/* Glassmorphism nav bar — VISIBLE frosted glass */
+/* Glassmorphism nav bar — VISIBLE frosted glass (90% opaque / 10% transparent) */
 .glassmorphism-nav {
   background: linear-gradient(
     145deg,
-    rgba(30, 30, 50, 0.65) 0%,
-    rgba(20, 20, 40, 0.75) 40%,
-    rgba(40, 40, 70, 0.6) 100%
+    rgba(30, 30, 50, 0.90) 0%,
+    rgba(20, 20, 40, 0.92) 40%,
+    rgba(40, 40, 70, 0.88) 100%
   );
   backdrop-filter: blur(50px) saturate(2);
   -webkit-backdrop-filter: blur(50px) saturate(2);
