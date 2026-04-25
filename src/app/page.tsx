@@ -1791,7 +1791,8 @@ function ProfileView({ user }: { user: any }) {
   const [avatarUrl, setAvatarUrl] = useState((user as any)?.image || '')
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [showAvatarEdit, setShowAvatarEdit] = useState(false)
-  const [drunkMode, setDrunkMode] = useState(false)
+  const drunkMode = useAppStore((s) => s.drunkMode)
+  const setDrunkMode = useAppStore((s) => s.setDrunkMode)
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logoutIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -1801,15 +1802,7 @@ function ProfileView({ user }: { user: any }) {
     if (img) setAvatarUrl(img)
   }, [user])
 
-  // Drunk mode: toggle class on <html>
-  useEffect(() => {
-    if (drunkMode) {
-      document.documentElement.classList.add('drunk-mode')
-    } else {
-      document.documentElement.classList.remove('drunk-mode')
-    }
-    return () => document.documentElement.classList.remove('drunk-mode')
-  }, [drunkMode])
+  // Drunk mode timer / click handlers remain here, CSS class managed in Home component
 
   const handleLogoutDown = () => {
     logoutTimerRef.current = setTimeout(() => {
@@ -2522,8 +2515,18 @@ function LoadingSpinner() {
 // ==================== MAIN APP ====================
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer, tiltEnabled, setTiltEnabled, tiltTop10, setTiltTop10 } = useAppStore()
+  const { activeTab, isCreateModalOpen, setCreateModalOpen, selectedScammer, setSelectedScammer, tiltEnabled, setTiltEnabled, tiltTop10, setTiltTop10, drunkMode, setDrunkMode } = useAppStore()
   const [showTiltChoice, setShowTiltChoice] = useState(false)
+
+  // Drunk mode: toggle class on <html> — lives in Home so it persists across tabs
+  useEffect(() => {
+    if (drunkMode) {
+      document.documentElement.classList.add('drunk-mode')
+    } else {
+      document.documentElement.classList.remove('drunk-mode')
+    }
+    return () => document.documentElement.classList.remove('drunk-mode')
+  }, [drunkMode])
 
   // Load tilt preferences from localStorage on mount
   useEffect(() => {
