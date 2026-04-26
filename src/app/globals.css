@@ -606,3 +606,11 @@
   50% { transform: rotate(-1deg) scale(0.98); }
   75% { transform: rotate(3deg) scale(1.02); }
 }
+
+@keyframes tag-sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+.animate-tag-sparkle {
+  animation: tag-sparkle 2s ease-in-out infinite;
+}

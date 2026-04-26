@@ -478,6 +478,14 @@ export default function PanelPage() {
   const [banModalUser, setBanModalUser] = useState<any>(null)
   const [banReason, setBanReason] = useState('')
 
+  // User tags management
+  const [tagsModalUser, setTagsModalUser] = useState<any>(null)
+  const [userTags, setUserTags] = useState<any[]>([])
+  const [newTagText, setNewTagText] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#3b82f6')
+  const [newTagTextColor, setNewTagTextColor] = useState('#ffffff')
+  const [newTagSparkly, setNewTagSparkly] = useState(false)
+
   // Revision
   const [revisionSub, setRevisionSub] = useState<Submission | null>(null)
   const [revisionReason, setRevisionReason] = useState('')
@@ -943,6 +951,43 @@ export default function PanelPage() {
       toast.success(data.message)
       loadUsers(usersPage, usersSearch, usersRoleFilter)
     } catch { toast.error('Ошибка') }
+  }
+
+  const loadUserTags = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/panel/users/${userId}/tags`)
+      const data = await res.json()
+      setUserTags(data.tags || [])
+    } catch { setUserTags([]) }
+  }
+
+  const handleCreateTag = async () => {
+    if (!tagsModalUser || !newTagText.trim()) return
+    try {
+      const res = await fetch(`/api/panel/users/${tagsModalUser.id}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: newTagText.trim(),
+          color: newTagColor,
+          textColor: newTagTextColor,
+          sparkly: newTagSparkly,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUserTags(prev => [data.tag, ...prev])
+        setNewTagText('')
+      }
+    } catch {}
+  }
+
+  const handleDeleteTag = async (tagId: string) => {
+    if (!tagsModalUser) return
+    try {
+      await fetch(`/api/panel/users/${tagsModalUser.id}/tags?tagId=${tagId}`, { method: 'DELETE' })
+      setUserTags(prev => prev.filter(t => t.id !== tagId))
+    } catch {}
   }
 
   const handleDeleteUser = async (userId: string, username: string) => {
@@ -1484,36 +1529,47 @@ export default function PanelPage() {
                                   )}
                                 </div>
                               </div>
-                              {u.role !== 'admin' && (
-                                <div className="flex gap-2 shrink-0">
-                                  {u.role === 'banned' ? (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleUnbanUser(u.id)}
-                                      className="h-8 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
-                                    >
-                                      Разбанить
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => { setBanModalUser(u); setBanReason('') }}
-                                      className="h-8 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
-                                    >
-                                      Забанить
-                                    </Button>
-                                  )}
+                              <div className="flex gap-2 shrink-0">
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleDeleteUser(u.id, u.username)}
-                                    className="h-8 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400 font-mono text-[10px] rounded-lg"
+                                    onClick={() => { setTagsModalUser(u); loadUserTags(u.id) }}
+                                    className="h-8 border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 font-mono text-[10px] rounded-lg"
                                   >
-                                    <Trash2 className="w-3 h-3 mr-1" />
-                                    Удалить
+                                    <Tag className="w-3 h-3 mr-1" />
+                                    Теги
                                   </Button>
+                                  {u.role !== 'admin' && (
+                                    <>
+                                      {u.role === 'banned' ? (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleUnbanUser(u.id)}
+                                          className="h-8 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
+                                        >
+                                          Разбанить
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => { setBanModalUser(u); setBanReason('') }}
+                                          className="h-8 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
+                                        >
+                                          Забанить
+                                        </Button>
+                                      )}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleDeleteUser(u.id, u.username)}
+                                        className="h-8 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400 font-mono text-[10px] rounded-lg"
+                                      >
+                                        <Trash2 className="w-3 h-3 mr-1" />
+                                        Удалить
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
-                              )}
                             </div>
                           </motion.div>
                         ))}
@@ -2407,6 +2463,131 @@ export default function PanelPage() {
               >
                 Забанить
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tags Modal */}
+      <AnimatePresence>
+        {tagsModalUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setTagsModalUser(null)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-md glass rounded-2xl p-6 border border-yellow-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-mono font-bold text-yellow-300">Теги — {tagsModalUser.username}</h3>
+                <button onClick={() => setTagsModalUser(null)} className="p-1 rounded hover:bg-yellow-500/10">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Existing tags */}
+              {userTags.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {userTags.map(tag => (
+                    <div key={tag.id} className="flex items-center justify-between glass rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            backgroundColor: tag.color,
+                            color: tag.textColor,
+                            boxShadow: tag.sparkly ? `0 0 8px ${tag.color}80` : 'none',
+                          }}
+                        >
+                          {tag.sparkly && <span className="mr-0.5">✨</span>}
+                          {tag.text}
+                        </span>
+                        <div className="flex gap-1.5">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: tag.color }} title="Цвет фона" />
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: tag.textColor }} title="Цвет текста" />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTag(tag.id)}
+                        className="p-1 rounded hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new tag */}
+              <div className="space-y-3">
+                <p className="text-[10px] text-green-600 font-mono">Добавить тег:</p>
+                <Input
+                  placeholder="Текст тега..."
+                  value={newTagText}
+                  onChange={(e) => setNewTagText(e.target.value.slice(0, 30))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                  className="rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono text-sm"
+                />
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] text-green-600 font-mono">Фон</label>
+                    <input
+                      type="color"
+                      value={newTagColor}
+                      onChange={(e) => setNewTagColor(e.target.value)}
+                      className="w-7 h-7 rounded cursor-pointer border border-green-500/20 bg-transparent"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] text-green-600 font-mono">Текст</label>
+                    <input
+                      type="color"
+                      value={newTagTextColor}
+                      onChange={(e) => setNewTagTextColor(e.target.value)}
+                      className="w-7 h-7 rounded cursor-pointer border border-green-500/20 bg-transparent"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setNewTagSparkly(!newTagSparkly)}
+                    className={`flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-lg transition-colors ${
+                      newTagSparkly ? 'bg-yellow-500/20 text-yellow-300' : 'text-green-600 hover:text-yellow-300'
+                    }`}
+                  >
+                    ✨ Блеск
+                  </button>
+                </div>
+                {newTagText.trim() && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-green-600 font-mono">Предпросмотр:</span>
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        backgroundColor: newTagColor,
+                        color: newTagTextColor,
+                        boxShadow: newTagSparkly ? `0 0 8px ${newTagColor}80` : 'none',
+                      }}
+                    >
+                      {newTagSparkly && <span className="mr-0.5">✨</span>}
+                      {newTagText.trim()}
+                    </span>
+                  </div>
+                )}
+                <Button
+                  onClick={handleCreateTag}
+                  disabled={!newTagText.trim()}
+                  className="w-full h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg text-sm"
+                >
+                  Добавить тег
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}

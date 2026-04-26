@@ -44,6 +44,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import UserNameHistoryModal from '@/components/UserNameHistoryModal'
+import UserTagsBadge from '@/components/UserTagsBadge'
 
 // ==================== TYPES ====================
 interface ScammerResult {
@@ -1604,6 +1605,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                               </AvatarFallback>
                             </Avatar>
                             <span className="text-xs font-medium truncate">{comment.user.username}</span>
+                            <UserTagsBadge userId={comment.user.id} size="sm" />
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <span className="text-[10px] text-muted-foreground">
@@ -1976,6 +1978,7 @@ function ProfileView({ user }: { user: any }) {
             <Badge variant="outline" className="mt-1">
               {(user as any).role === 'admin' ? 'Админ' : 'Пользователь'}
             </Badge>
+            <UserTagsBadge userId={(user as any)?.userId || (user as any)?.id || ''} size="md" className="mt-1" />
           </div>
         </div>
       </div>

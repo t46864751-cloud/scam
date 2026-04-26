@@ -20,6 +20,21 @@ model User {
   submissions Submission[]
   searchLogs  SearchLog[]
   comments    Comment[]
+  tags        UserTag[]
+}
+
+model UserTag {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  color     String   @default("#3b82f6")
+  textColor String   @default("#ffffff")
+  sparkly   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Scammer {
