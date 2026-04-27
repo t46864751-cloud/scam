@@ -304,7 +304,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-w-md mx-4 mb-20 sm:mb-0"
       >
-          <TiltCard className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
+          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -322,8 +322,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
-                <TiltCard className="rounded-xl">
-                  <Input
+                <Input
                     placeholder="Имя пользователя"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
@@ -334,7 +333,6 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     pattern="[a-zA-Z0-9_]+"
                     title="Только английские буквы, цифры и _"
                   />
-                </TiltCard>
                 {!isLogin && (
                   <p className="text-[10px] text-muted-foreground mt-1 pl-1">Только английские буквы (a-z), цифры и _ • 3-20 символов</p>
                 )}
@@ -387,7 +385,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                 {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
               </button>
             </div>
-          </TiltCard>
+          </div>
         </motion.div>
     </motion.div>
   )
@@ -1719,7 +1717,19 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 <div className="grid grid-cols-2 gap-2">
                   {scammer.screenshots.map((src: string, i: number) => {
                     const isUrl = src.startsWith('http://') || src.startsWith('https://')
-                    return isUrl ? (
+                    if (!isUrl) return null
+                    const isImage = /\.(jpe?g|png|webp|gif|bmp|avif)(\?.*)?$/i.test(src)
+                    return isImage ? (
+                      <a key={i} href={src} target="_blank" rel="noopener noreferrer">
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`Screenshot ${i + 1}`}
+                          className="w-full rounded-xl border border-border object-cover aspect-[4/3]"
+                          loading="lazy"
+                        />
+                      </a>
+                    ) : (
                       <a
                         key={i}
                         href={src}
@@ -1730,13 +1740,6 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                         <LinkIcon className="w-4 h-4 shrink-0" />
                         <span className="truncate">{src.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
                       </a>
-                    ) : (
-                      <img
-                        key={i}
-                        src={src}
-                        alt={`Screenshot ${i + 1}`}
-                        className="w-full rounded-xl border border-border"
-                      />
                     )
                   })}
                 </div>

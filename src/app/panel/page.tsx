@@ -1794,9 +1794,19 @@ export default function PanelPage() {
 
                             {sub.screenshots && sub.screenshots.length > 0 && (
                               <div className="flex gap-2 overflow-x-auto">
-                                {sub.screenshots.map((src, j) => (
-                                  <img key={j} src={src} alt="" className="w-16 h-16 rounded-lg object-cover border border-green-500/20" />
-                                ))}
+                                {sub.screenshots.map((src: string, j: number) => {
+                                  const isImage = /\.(jpe?g|png|webp|gif|bmp|avif)(\?.*)?$/i.test(src)
+                                  return isImage ? (
+                                    <a key={j} href={src} target="_blank" rel="noopener noreferrer">
+                                      <img src={src} alt="" className="w-16 h-16 rounded-lg object-cover border border-green-500/20" />
+                                    </a>
+                                  ) : (
+                                    <a key={j} href={src} target="_blank" rel="noopener noreferrer"
+                                      className="shrink-0 w-16 h-16 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/20 transition-colors">
+                                      <LinkIcon className="w-4 h-4" />
+                                    </a>
+                                  )
+                                })}
                               </div>
                             )}
 
