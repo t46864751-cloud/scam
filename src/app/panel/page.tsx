@@ -11,7 +11,7 @@ import {
   Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
-  Download, Clock, Scale,
+  Download, Clock, Scale, Menu,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -421,6 +421,7 @@ export default function PanelPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [tab, setTab] = useState<PanelTab>('dashboard')
+  const [mobileMenu, setMobileMenu] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
   const [scammers, setScammers] = useState<Scammer[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -1173,6 +1174,9 @@ export default function PanelPage() {
         <div className="md:hidden fixed top-0 left-0 right-0 z-30 glass-strong border-b border-green-500/10 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <button onClick={() => setMobileMenu(true)} className="p-2 -ml-2 rounded-lg hover:bg-green-500/10">
+                <Menu className="w-5 h-5 text-green-400" />
+              </button>
               <Terminal className="w-5 h-5 text-green-400" />
               <span className="font-mono font-bold text-green-400">ADMIN</span>
             </div>
@@ -1182,34 +1186,96 @@ export default function PanelPage() {
               </button>
             </div>
           </div>
-          {/* Mobile tabs */}
-          <div className="flex gap-1 mt-3 overflow-x-auto">
-            {[
-              { id: 'dashboard' as const, label: 'Дашборд' },
-              { id: 'scammers' as const, label: 'Скамеры' },
-              { id: 'users' as const, label: 'Юзеры' },
-              { id: 'submissions' as const, label: 'Заявки' },
-              { id: 'comments' as const, label: 'Комменты' },
-              { id: 'complaints' as const, label: 'Жалобы' },
-              { id: 'stats' as const, label: 'Стат.' },
-              { id: 'add' as const, label: 'Добавить' },
-              { id: 'statuses' as const, label: 'Статусы' },
-              { id: 'export' as const, label: 'Экспорт' },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
-                  tab === t.id
-                    ? 'bg-green-500/10 text-green-300 border border-green-500/20'
-                    : 'text-green-600 hover:text-green-400'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
         </div>
+
+        {/* Mobile menu drawer */}
+        <AnimatePresence>
+          {mobileMenu && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="md:hidden fixed inset-0 z-40"
+                style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+                onClick={() => setMobileMenu(false)}
+              />
+              <motion.div
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+                className="md:hidden fixed left-0 top-0 bottom-0 z-50 w-72 bg-[#0a0a0f] border-r border-green-500/10 flex flex-col"
+              >
+                <div className="flex items-center justify-between p-4 border-b border-green-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/20 flex items-center justify-center">
+                      <Terminal className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div>
+                      <h1 className="font-bold text-green-400 font-mono text-sm">ScamBase</h1>
+                      <p className="text-[9px] text-green-600 font-mono">ADMIN PANEL</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setMobileMenu(false)} className="p-2 rounded-lg hover:bg-green-500/10">
+                    <X className="w-4 h-4 text-green-400" />
+                  </button>
+                </div>
+
+                <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+                  {[
+                    { id: 'dashboard' as const, icon: Activity, label: 'Дашборд' },
+                    { id: 'scammers' as const, icon: Database, label: 'Скамеры' },
+                    { id: 'users' as const, icon: Users, label: 'Юзеры' },
+                    { id: 'submissions' as const, icon: FileText, label: 'Заявки' },
+                    { id: 'comments' as const, icon: MessageSquare, label: 'Комментарии' },
+                    { id: 'complaints' as const, icon: AlertTriangle, label: 'Жалобы' },
+                    { id: 'appeals' as const, icon: Scale, label: 'Апелляции' },
+                    { id: 'stats' as const, icon: TrendingUp, label: 'Статистика' },
+                    { id: 'add' as const, icon: Plus, label: 'Добавить' },
+                    { id: 'statuses' as const, icon: Tag, label: 'Типы статусов' },
+                    { id: 'export' as const, icon: Download, label: 'Экспорт' },
+                  ].map((item) => {
+                    const Icon = item.icon
+                    const isActive = tab === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => { setTab(item.id); setMobileMenu(false) }}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg font-mono text-sm transition-all ${
+                          isActive
+                            ? 'bg-green-500/10 text-green-300 border border-green-500/20'
+                            : 'text-green-600 hover:text-green-400 hover:bg-green-500/5'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </nav>
+
+                <div className="p-3 border-t border-green-500/10 space-y-1">
+                  <button
+                    onClick={() => { router.push('/'); setMobileMenu(false) }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg font-mono text-sm text-green-600 hover:text-green-400 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    На сайт
+                  </button>
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg font-mono text-sm text-red-600 hover:text-red-400 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Выйти
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Main content */}
         <main className="flex-1 p-4 md:p-8 pt-20 md:pt-8 overflow-y-auto">
