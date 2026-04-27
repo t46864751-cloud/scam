@@ -499,6 +499,10 @@ export default function PanelPage() {
   const [revisionSub, setRevisionSub] = useState<Submission | null>(null)
   const [revisionReason, setRevisionReason] = useState('')
 
+  // Reject with reason
+  const [rejectSub, setRejectSub] = useState<Submission | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+
   // Status types
   const [statusTypes, setStatusTypes] = useState<any[]>([])
   const [newStatusLabel, setNewStatusLabel] = useState('')
@@ -909,6 +913,8 @@ export default function PanelPage() {
       toast.success(data.message || 'Статус обновлен')
       setRevisionSub(null)
       setRevisionReason('')
+      setRejectSub(null)
+      setRejectReason('')
       loadData()
     } catch (err) {
       console.error('Submission action error:', err)
@@ -1804,7 +1810,7 @@ export default function PanelPage() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => handleSubmissionAction(sub.id, 'rejected')}
+                                  onClick={() => { setRejectSub(sub); setRejectReason('') }}
                                   className="h-8 bg-red-600 hover:bg-red-700 text-white font-mono text-xs rounded-lg"
                                 >
                                   <XCircle className="w-3 h-3 mr-1" />
@@ -2689,6 +2695,51 @@ export default function PanelPage() {
                 className="w-full h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg"
               >
                 Отправить на доработку
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject with Reason Modal */}
+      <AnimatePresence>
+        {rejectSub && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setRejectSub(null)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-md glass rounded-2xl p-6 border border-red-500/20 max-h-[90dvh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-mono font-bold text-red-300">Причина отклонения</h3>
+                <button onClick={() => setRejectSub(null)} className="p-1 rounded hover:bg-red-500/10">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <Textarea
+                placeholder="Опишите причину отклонения заявки..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="rounded-lg bg-red-500/5 border-red-500/20 text-red-200 font-mono min-h-[80px] mb-3"
+              />
+
+              <Button
+                onClick={() => handleSubmissionAction(rejectSub.id, 'rejected', rejectReason)}
+                disabled={!rejectReason.trim()}
+                className="w-full h-10 bg-red-600 hover:bg-red-700 text-white font-mono rounded-lg"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Отклонить
               </Button>
             </motion.div>
           </motion.div>

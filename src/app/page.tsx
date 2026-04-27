@@ -2272,10 +2272,20 @@ function ProfileView({ user }: { user: any }) {
                   </Badge>
                 </div>
 
-                {sub.revisionReason && (
-                  <div className="mt-2 p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                    <p className="text-xs text-orange-400">
-                      <AlertTriangle className="w-3 h-3 inline mr-1" />
+                {(sub.revisionReason) && (
+                  <div className={`mt-2 p-2 rounded-lg border ${
+                    sub.status === 'rejected'
+                      ? 'bg-red-500/10 border-red-500/20'
+                      : 'bg-orange-500/10 border-orange-500/20'
+                  }`}>
+                    <p className={`text-xs ${
+                      sub.status === 'rejected' ? 'text-red-400' : 'text-orange-400'
+                    }`}>
+                      {sub.status === 'rejected' ? (
+                        <XCircle className="w-3 h-3 inline mr-1" />
+                      ) : (
+                        <AlertTriangle className="w-3 h-3 inline mr-1" />
+                      )}
                       {sub.revisionReason}
                     </p>
                   </div>
