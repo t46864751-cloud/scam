@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   turbopack: {
-    root: '/home/z',
+    root: '.',
   },
   images: {
     remotePatterns: [

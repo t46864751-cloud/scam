@@ -1328,23 +1328,19 @@ function AppealModal({ scammer, onClose }: { scammer: any; onClose: () => void }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
       onClick={onClose}
     >
-      <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
-        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-        transition={{ duration: 0.25 }}
-        style={{ backgroundColor: 'var(--overlay)' }}
+      <div
+        className="absolute inset-0 transition-[backdrop-filter] duration-300"
+        style={{ backgroundColor: 'var(--overlay)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       />
       <motion.div
-        initial={{ y: 120, opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
-        animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
-        exit={{ y: 80, opacity: 0, scale: 0.92, filter: 'blur(6px)', transition: { duration: 0.3, ease: [0.36, 0, 0.66, -0.56] } }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        initial={{ y: 60, opacity: 0, scale: 0.96 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 40, opacity: 0, scale: 0.94, transition: { duration: 0.2, ease: [0.36, 0, 0.66, -0.56] } }}
+        transition={{ type: 'spring', damping: 30, stiffness: 350 }}
         onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
       >
@@ -1406,7 +1402,11 @@ function AppealModal({ scammer, onClose }: { scammer: any; onClose: () => void }
               <Button
                 onClick={handleSubmit}
                 disabled={loading || !description.trim() || description.trim().length < 10}
-                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white font-semibold"
+                className={`flex-1 h-12 rounded-xl font-semibold transition-all duration-200 ${
+                  (!description.trim() || description.trim().length < 10) && !loading
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                    : 'bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white hover:shadow-lg hover:shadow-orange-500/25'
+                }`}
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
