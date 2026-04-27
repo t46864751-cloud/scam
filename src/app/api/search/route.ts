@@ -111,6 +111,8 @@ export async function GET(req: NextRequest) {
       screenshots: safeParseJSON(s.screenshots, []),
       scammerType: s.scammerType,
       scamDate: s.scamDate,
+      scamAmount: s.scamAmount || '',
+      scamCurrency: s.scamCurrency || '',
       proofLink: s.proofLink,
       telegramUserId: s.telegramUserId || '',
       createdAt: s.createdAt,

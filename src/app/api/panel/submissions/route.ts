@@ -50,6 +50,8 @@ export async function GET() {
       scammerName: s.scammerName,
       scammerData: s.scammerData,
       telegramUserId: s.telegramUserId || '',
+      scamAmount: s.scamAmount || '',
+      scamCurrency: s.scamCurrency || '',
       scammerStatus: s.scammerStatus || 'scam',
       scammerStatusLabel: statusMap[s.scammerStatus]?.label || s.scammerStatus,
       scammerStatusColor: statusMap[s.scammerStatus]?.color || '#6b7280',
@@ -126,6 +128,8 @@ export async function PUT(req: NextRequest) {
             status: (submission as any).scammerStatus || 'scam',
             screenshots: submission.screenshots,
             telegramUserId: (submission as any).telegramUserId || '',
+            scamAmount: (submission as any).scamAmount || '',
+            scamCurrency: (submission as any).scamCurrency || '',
             createdBy: adminUserId,
           },
         })
@@ -135,11 +139,21 @@ export async function PUT(req: NextRequest) {
           data: { status, scammerId: newScammer.id },
         })
       } else {
-        // Update existing scammer's telegramUserId if empty
+        // Update existing scammer's telegramUserId and amount if empty
+        const scammerUpdateData: any = {}
         if (existingScammer.telegramUserId === '' && (submission as any).telegramUserId) {
+          scammerUpdateData.telegramUserId = (submission as any).telegramUserId
+        }
+        if (existingScammer.scamAmount === '' && (submission as any).scamAmount) {
+          scammerUpdateData.scamAmount = (submission as any).scamAmount
+        }
+        if (existingScammer.scamCurrency === '' && (submission as any).scamCurrency) {
+          scammerUpdateData.scamCurrency = (submission as any).scamCurrency
+        }
+        if (Object.keys(scammerUpdateData).length > 0) {
           await db.scammer.update({
             where: { id: existingScammer.id },
-            data: { telegramUserId: (submission as any).telegramUserId },
+            data: scammerUpdateData,
           })
         }
         await db.submission.update({

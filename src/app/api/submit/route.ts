@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { scammerName, scammerData, telegramUserId, screenshots, scammerStatus } = body
+    const { scammerName, scammerData, telegramUserId, screenshots, scammerStatus, scamAmount, scamCurrency } = body
 
     // Manual validation (reliable across Zod versions)
     if (!scammerName || typeof scammerName !== 'string' || scammerName.trim().length < 1 || scammerName.trim().length > 200) {
@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
         telegramUserId: tgUserId,
         scammerStatus: scammerStatusKey,
         screenshots: JSON.stringify(screenshotUrls),
+        scamAmount: typeof scamAmount === 'string' ? scamAmount.slice(0, 50) : '',
+        scamCurrency: typeof scamCurrency === 'string' ? scamCurrency.slice(0, 50) : '',
         status: 'pending',
         userId,
         scammerId: existingScammer?.id || null,

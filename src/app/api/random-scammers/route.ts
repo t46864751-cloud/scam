@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     // Use random ordering via PostgreSQL random()
     const scammers = await db.$queryRawUnsafe(
-      `SELECT id, name, description, status, "likeCount", "dislikeCount", "searchCount", "scammerType", "scamDate", "telegramUserId", "proofLink", "screenshots", "createdAt"
+      `SELECT id, name, description, status, "likeCount", "dislikeCount", "searchCount", "scammerType", "scamDate", "scamAmount", "scamCurrency", "telegramUserId", "proofLink", "screenshots", "createdAt"
        FROM "Scammer"
        ORDER BY RANDOM()
        LIMIT $1 OFFSET $2`,
@@ -68,6 +68,8 @@ export async function GET(req: NextRequest) {
       screenshots: safeParseJSON(s.screenshots, []),
       scammerType: s.scammerType,
       scamDate: s.scamDate,
+      scamAmount: (s as any).scamAmount || '',
+      scamCurrency: (s as any).scamCurrency || '',
       proofLink: s.proofLink || '',
       telegramUserId: s.telegramUserId || '',
       createdAt: s.createdAt,

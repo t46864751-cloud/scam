@@ -63,6 +63,8 @@ interface ScammerResult {
   screenshots: string[]
   scammerType?: string
   scamDate?: string
+  scamAmount?: string
+  scamCurrency?: string
   proofLink?: string
   telegramUserId?: string
   createdAt: string
@@ -649,6 +651,9 @@ function FloatingScammers() {
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-sm truncate">{scammer.name}</p>
+                        {scammer.scamAmount && (
+                          <p className="text-[10px] text-orange-400 font-semibold truncate">{scammer.scamAmount} {scammer.scamCurrency || ''}</p>
+                        )}
                         <StatusBadge status={scammer.statusLabel || scammer.status} size="sm" color={scammer.statusColor} textColor={scammer.statusTextColor} />
                       </div>
                     </div>
@@ -935,7 +940,11 @@ function SearchView() {
                         </Avatar>
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{scammer.name}</p>
-                          <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
+                          {scammer.scamAmount ? (
+                            <p className="text-xs text-orange-400 font-semibold">{scammer.scamAmount} {scammer.scamCurrency || ''}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">{scammer.searchCount} поисков</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -1093,6 +1102,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [name, setName] = useState('')
   const [data, setData] = useState('')
   const [telegramUserId, setTelegramUserId] = useState('')
+  const [scamAmount, setScamAmount] = useState('')
+  const [scamCurrency, setScamCurrency] = useState('')
   const [screenshotText, setScreenshotText] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusTypes, setStatusTypes] = useState<any[]>([])
@@ -1123,6 +1134,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           telegramUserId: telegramUserId.trim(),
           screenshots: urls,
           scammerStatus: selectedStatus,
+          scamAmount: scamAmount.trim(),
+          scamCurrency: scamCurrency.trim(),
         }),
       })
 
@@ -1138,6 +1151,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
       setName('')
       setData('')
       setTelegramUserId('')
+      setScamAmount('')
+      setScamCurrency('')
       setScreenshotText('')
       setSelectedStatus('scam')
     } catch {
@@ -1210,6 +1225,41 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
                   className="h-12 rounded-xl bg-secondary border-border"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 block">Сумма скама <span className="text-muted-foreground/50">(необязательно)</span></label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Сколько..."
+                    value={scamAmount}
+                    onChange={(e) => setScamAmount(e.target.value)}
+                    className="flex-1 h-12 rounded-xl bg-secondary border-border"
+                  />
+                  <select
+                    value={scamCurrency}
+                    onChange={(e) => setScamCurrency(e.target.value)}
+                    className="h-12 rounded-xl bg-secondary border-border px-3 text-sm min-w-[110px] appearance-none cursor-pointer"
+                  >
+                    <option value="">Валюта</option>
+                    <option value="рубли">рубли</option>
+                    <option value="TON">TON</option>
+                    <option value="звёзды ТГ">звёзды ТГ</option>
+                    <option value="PRgram">PRgram</option>
+                    <option value="GRAM">GRAM</option>
+                    <option value="USDT">USDT</option>
+                    <option value="BTC">BTC</option>
+                    <option value="custom">другое...</option>
+                  </select>
+                </div>
+                {scamCurrency === 'custom' && (
+                  <Input
+                    placeholder="Название валюты..."
+                    value={scamCurrency === 'custom' ? '' : scamCurrency}
+                    onChange={(e) => setScamCurrency(e.target.value)}
+                    className="h-10 rounded-xl bg-secondary border-border mt-2 text-sm"
+                  />
+                )}
               </div>
 
               {statusTypes.length > 0 && (
@@ -1552,6 +1602,11 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 </Avatar>
                 <div className="min-w-0">
                   <h3 className="text-lg font-bold truncate">{scammer.name}</h3>
+                  {scammer.scamAmount && (
+                    <p className="text-sm text-orange-400 font-semibold">
+                      {scammer.scamAmount} {scammer.scamCurrency || ''}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <StatusBadge status={scammer.statusLabel || scammer.status} size="sm" color={scammer.statusColor} textColor={scammer.statusTextColor} />
                     {scammer.scammerType && (

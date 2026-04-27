@@ -50,6 +50,8 @@ model Scammer {
   screenshots  String   @default("[]") // JSON array of URLs
   scammerType  String   @default("") // "Бот" or "Человек"
   scamDate     String   @default("") // date string like "10.03.2026"
+  scamAmount   String   @default("") // e.g. "5000"
+  scamCurrency String   @default("") // "рубли", "ton", "stars", "prgram", "gram", or custom
   proofLink        String   @default("") // proof URL
   telegramUserId   String   @default("") // Telegram user ID from old DB
   createdBy        String?
@@ -83,6 +85,8 @@ model Submission {
   telegramUserId String   @default("") // Telegram ID of the scammer
   scammerStatus  String   @default("scam") // desired status for the scammer
   screenshots    String   @default("[]") // JSON array of URLs
+  scamAmount     String   @default("") // amount scammed
+  scamCurrency   String   @default("") // currency type
   status         String   @default("pending") // "pending", "approved", "rejected", "revision"
   revisionReason String   @default("")
   userId         String

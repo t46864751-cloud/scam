@@ -87,6 +87,8 @@ export async function GET(req: NextRequest) {
       createdAt: s.createdAt,
       scammerType: s.scammerType,
       scamDate: s.scamDate,
+      scamAmount: s.scamAmount || '',
+      scamCurrency: s.scamCurrency || '',
       proofLink: s.proofLink,
       telegramUserId: s.telegramUserId || '',
       submissionCount: countMap.get(s.id) || 0,
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { name, description, status, screenshots, scammerType, scamDate, proofLink, telegramUserId } = body
+    const { name, description, status, screenshots, scammerType, scamDate, scamAmount, scamCurrency, proofLink, telegramUserId } = body
 
     // Manual validation (more reliable than Zod v4 compatibility issues)
     if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 200) {
@@ -138,6 +140,8 @@ export async function POST(req: NextRequest) {
         createdBy: userId,
         scammerType: typeof scammerType === 'string' ? scammerType.slice(0, 100) : '',
         scamDate: typeof scamDate === 'string' ? scamDate.slice(0, 50) : '',
+        scamAmount: typeof scamAmount === 'string' ? scamAmount.slice(0, 50) : '',
+        scamCurrency: typeof scamCurrency === 'string' ? scamCurrency.slice(0, 50) : '',
         proofLink: typeof proofLink === 'string' ? proofLink.slice(0, 500) : '',
         telegramUserId: typeof telegramUserId === 'string' ? telegramUserId.slice(0, 50) : '',
       },
@@ -160,7 +164,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 })
     }
 
-    const { id, name, description, status, screenshots, searchCount, scammerType, scamDate, proofLink, telegramUserId } = await req.json()
+    const { id, name, description, status, screenshots, searchCount, scammerType, scamDate, scamAmount, scamCurrency, proofLink, telegramUserId } = await req.json()
 
     if (!id) {
       return NextResponse.json({ error: 'Не указан ID' }, { status: 400 })
@@ -193,6 +197,8 @@ export async function PUT(req: NextRequest) {
     }
     if (scammerType !== undefined && typeof scammerType === 'string') updateData.scammerType = scammerType.slice(0, 100)
     if (scamDate !== undefined && typeof scamDate === 'string') updateData.scamDate = scamDate.slice(0, 50)
+    if (scamAmount !== undefined && typeof scamAmount === 'string') updateData.scamAmount = scamAmount.slice(0, 50)
+    if (scamCurrency !== undefined && typeof scamCurrency === 'string') updateData.scamCurrency = scamCurrency.slice(0, 50)
     if (proofLink !== undefined && typeof proofLink === 'string') updateData.proofLink = proofLink.slice(0, 500)
     if (telegramUserId !== undefined && typeof telegramUserId === 'string') updateData.telegramUserId = telegramUserId.slice(0, 50)
 

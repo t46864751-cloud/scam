@@ -441,6 +441,8 @@ export default function PanelPage() {
   const [newStatus, setNewStatus] = useState('scam')
   const [newScammerType, setNewScammerType] = useState('')
   const [newScamDate, setNewScamDate] = useState('')
+  const [newScamAmount, setNewScamAmount] = useState('')
+  const [newScamCurrency, setNewScamCurrency] = useState('')
   const [newProofLink, setNewProofLink] = useState('')
   const [newTelegramUserId, setNewTelegramUserId] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -814,6 +816,8 @@ export default function PanelPage() {
           screenshots: [],
           scammerType: newScammerType,
           scamDate: newScamDate,
+          scamAmount: newScamAmount,
+          scamCurrency: newScamCurrency,
           proofLink: newProofLink,
           telegramUserId: newTelegramUserId,
         }),
@@ -831,6 +835,8 @@ export default function PanelPage() {
       setNewStatus('scam')
       setNewScammerType('')
       setNewScamDate('')
+      setNewScamAmount('')
+      setNewScamCurrency('')
       setNewProofLink('')
       setNewTelegramUserId('')
       loadScammers(scammerPage, scammerSearch)
@@ -1503,6 +1509,7 @@ export default function PanelPage() {
                                   Поисков: {s.searchCount} | Заявок: {s.submissionCount || 0}
                                   {s.scammerType && ` | ${s.scammerType}`}
                                   {s.scamDate && ` | ${s.scamDate}`}
+                                  {s.scamAmount && ` | ${s.scamAmount} ${s.scamCurrency || ''}`}
                                   {s.telegramUserId && ` | ID: ${s.telegramUserId}`}
                                 </p>
                               </div>
@@ -1773,6 +1780,7 @@ export default function PanelPage() {
                                 <p className="text-xs text-green-600 font-mono">
                                   от {sub.user?.username || 'неизвестно'} | {new Date(sub.createdAt).toLocaleDateString('ru-RU')}
                                   {sub.telegramUserId && ` | Telegram ID: ${sub.telegramUserId}`}
+                                  {sub.scamAmount && ` | ${sub.scamAmount} ${sub.scamCurrency || ''}`}
                                 </p>
                               </div>
                               {subStatusBadge(sub.status)}
@@ -2244,6 +2252,29 @@ export default function PanelPage() {
                       <label className="text-xs font-mono text-green-600 mb-1.5 block">Дата добавления</label>
                       <Input placeholder="10.03.2026" value={newScamDate} onChange={(e) => setNewScamDate(e.target.value)}
                         className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono focus:border-green-500/40" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-mono text-green-600 mb-1.5 block">Сумма скама</label>
+                      <div className="flex gap-2">
+                        <Input placeholder="Сколько..." value={newScamAmount} onChange={(e) => setNewScamAmount(e.target.value)}
+                          className="flex-1 h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono focus:border-green-500/40" />
+                        <select value={newScamCurrency} onChange={(e) => setNewScamCurrency(e.target.value)}
+                          className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono px-3 min-w-[120px] appearance-none cursor-pointer focus:border-green-500/40">
+                          <option value="">Валюта</option>
+                          <option value="рубли">рубли</option>
+                          <option value="TON">TON</option>
+                          <option value="звёзды ТГ">звёзды ТГ</option>
+                          <option value="PRgram">PRgram</option>
+                          <option value="GRAM">GRAM</option>
+                          <option value="USDT">USDT</option>
+                          <option value="BTC">BTC</option>
+                          <option value="custom">другое...</option>
+                        </select>
+                      </div>
+                      {newScamCurrency === 'custom' && (
+                        <Input placeholder="Название валюты..." value={newScamCurrency === 'custom' ? '' : newScamCurrency} onChange={(e) => setNewScamCurrency(e.target.value)}
+                          className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono focus:border-green-500/40 mt-2" />
+                      )}
                     </div>
                     <div>
                       <label className="text-xs font-mono text-green-600 mb-1.5 block">Ссылка на доказательство</label>
