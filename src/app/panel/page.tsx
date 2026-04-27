@@ -11,7 +11,7 @@ import {
   Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
-  Download, Clock,
+  Download, Clock, Scale,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -71,7 +71,7 @@ interface Stats {
   dbChangesToday: number
 }
 
-type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'stats' | 'add' | 'statuses' | 'export'
+type PanelTab = 'dashboard' | 'scammers' | 'users' | 'submissions' | 'comments' | 'complaints' | 'appeals' | 'stats' | 'add' | 'statuses' | 'export'
 
 // ==================== PING PONG GAME ====================
 function PingPongGame() {
@@ -466,6 +466,14 @@ export default function PanelPage() {
   const [complaints, setComplaints] = useState<any[]>([])
   const [complaintsLoading, setComplaintsLoading] = useState(false)
 
+  // Appeals management
+  const [appeals, setAppeals] = useState<any[]>([])
+  const [appealsLoading, setAppealsLoading] = useState(false)
+  const [appealsPage, setAppealsPage] = useState(1)
+  const [appealsTotalPages, setAppealsTotalPages] = useState(1)
+  const [appealsTotal, setAppealsTotal] = useState(0)
+  const [appealsStatusFilter, setAppealsStatusFilter] = useState('all')
+
   // Users management
   const [users, setUsers] = useState<any[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
@@ -693,6 +701,54 @@ export default function PanelPage() {
       .catch(() => toast.error('Ошибка загрузки жалоб'))
       .finally(() => setComplaintsLoading(false))
   }, [tab, isAdminChecked])
+
+  // Load appeals when tab is active
+  const loadAppeals = useCallback(async (page: number, status: string) => {
+    setAppealsLoading(true)
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '15' })
+      if (status && status !== 'all') params.set('status', status)
+      const res = await fetch(`/api/panel/appeals?${params}`)
+      if (res.status === 403) { toast.error('Доступ запрещен'); return }
+      const data = await res.json()
+      setAppeals(data.results || [])
+      setAppealsTotal(data.total || 0)
+      setAppealsTotalPages(data.totalPages || 1)
+    } catch { toast.error('Ошибка загрузки апелляций') }
+    finally { setAppealsLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    if (tab !== 'appeals' || !isAdminChecked) return
+    setAppealsPage(1)
+    loadAppeals(1, appealsStatusFilter)
+  }, [tab, isAdminChecked, appealsStatusFilter])
+
+  useEffect(() => {
+    if (tab !== 'appeals' || appealsPage === 1) return
+    loadAppeals(appealsPage, appealsStatusFilter)
+  }, [appealsPage, tab, appealsStatusFilter])
+
+  const handleAppealAction = async (appealId: string, action: string, scammerName: string) => {
+    const confirmMsg = action === 'accept'
+      ? `Принять апелляцию и удалить "${scammerName}" из базы?`
+      : action === 'reject'
+      ? 'Отклонить апелляцию?'
+      : 'Забанить автора апелляции?'
+    if (!confirm(confirmMsg)) return
+
+    try {
+      const res = await fetch('/api/panel/appeals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appealId, action }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      loadAppeals(appealsPage, appealsStatusFilter)
+    } catch { toast.error('Ошибка') }
+  }
 
   // Load users when tab is active
   const loadUsers = useCallback(async (page: number, search: string, role: string) => {
@@ -1070,6 +1126,7 @@ export default function PanelPage() {
               { id: 'submissions' as const, icon: FileText, label: 'Заявки' },
               { id: 'comments' as const, icon: MessageSquare, label: 'Комментарии' },
               { id: 'complaints' as const, icon: AlertTriangle, label: 'Жалобы' },
+              { id: 'appeals' as const, icon: Scale, label: 'Апелляции' },
               { id: 'stats' as const, icon: TrendingUp, label: 'Статистика' },
               { id: 'add' as const, icon: Plus, label: 'Добавить' },
               { id: 'statuses' as const, icon: Tag, label: 'Типы статусов' },
@@ -1895,6 +1952,155 @@ export default function PanelPage() {
                         </motion.div>
                       ))}
                     </div>
+                  )}
+                </motion.div>
+              )}
+
+              {tab === 'appeals' && (
+                <motion.div key="appeals" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold font-mono text-green-300">{'>'} Апелляции</h2>
+                    <p className="text-sm text-green-600 font-mono mt-1">{'// '}Запросы на удаление из базы ({appealsTotal} всего)</p>
+                  </div>
+
+                  {/* Filter */}
+                  <div className="glass rounded-xl p-4 border border-green-500/10 mb-4">
+                    <div className="flex gap-2 flex-wrap">
+                      {['all', 'pending', 'accepted', 'rejected', 'banned'].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => { setAppealsStatusFilter(s); setAppealsPage(1) }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                            appealsStatusFilter === s
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-green-500/5 text-green-600 hover:text-green-400 border border-transparent'
+                          }`}
+                        >
+                          {s === 'all' ? 'Все' : s === 'pending' ? 'Ожидают' : s === 'accepted' ? 'Принятые' : s === 'rejected' ? 'Отклонённые' : 'Забаненные'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {appealsLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+                    </div>
+                  ) : appeals.length === 0 ? (
+                    <div className="glass rounded-xl p-8 border border-green-500/10 text-center">
+                      <Scale className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                      <p className="font-mono text-green-600">Нет апелляций.</p>
+                    </div>
+                  ) : (
+                    <>
+                    <div className="space-y-3">
+                      {appeals.map((a: any, i: number) => (
+                        <motion.div
+                          key={a.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03 }}
+                          className={`glass rounded-xl p-4 border ${
+                            a.status === 'pending' ? 'border-orange-500/20' :
+                            a.status === 'accepted' ? 'border-green-500/20' :
+                            a.status === 'banned' ? 'border-red-500/20' :
+                            'border-gray-500/20'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-3">
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center shrink-0">
+                                  <Scale className="w-5 h-5 text-orange-400" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-mono font-semibold text-sm truncate">{a.scammer?.name || 'Неизвестен'}</p>
+                                  <div className="flex items-center gap-2 text-[10px] text-green-600 font-mono mt-0.5">
+                                    <span>{new Date(a.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span>от {a.user?.username || 'Аноним'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {a.status === 'pending' ? (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-mono shrink-0">Ожидает</span>
+                              ) : a.status === 'accepted' ? (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 font-mono shrink-0">Принята</span>
+                              ) : a.status === 'banned' ? (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-mono shrink-0">Забанен</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0 rounded-full bg-gray-500/20 text-gray-400 border border-gray-500/30 font-mono shrink-0">Отклонена</span>
+                              )}
+                            </div>
+
+                            {/* Description */}
+                            <p className="text-sm text-green-100/80 font-mono bg-green-500/5 rounded-lg p-3 whitespace-pre-wrap break-words">{a.description}</p>
+
+                            {/* Proof link */}
+                            {a.proofLink && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-green-600 font-mono shrink-0">Доказательство:</span>
+                                <a href={a.proofLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-1 truncate">
+                                  {a.proofLink}
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Actions */}
+                            {a.status === 'pending' && (
+                              <div className="flex gap-2 flex-wrap justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAppealAction(a.id, 'accept', a.scammer?.name)}
+                                  className="h-8 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Принять
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAppealAction(a.id, 'reject', a.scammer?.name)}
+                                  className="h-8 bg-gray-600 hover:bg-gray-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Отклонить
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAppealAction(a.id, 'ban', a.scammer?.name)}
+                                  className="h-8 bg-red-600 hover:bg-red-700 text-white font-mono text-[10px] rounded-lg"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Забанить автора
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {appealsTotalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-6">
+                        <button
+                          onClick={() => setAppealsPage(p => Math.max(1, p - 1))}
+                          disabled={appealsPage <= 1}
+                          className="p-2 rounded-lg glass border border-green-500/10 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-green-400" />
+                        </button>
+                        <span className="text-sm text-green-600 font-mono">{appealsPage} / {appealsTotalPages}</span>
+                        <button
+                          onClick={() => setAppealsPage(p => Math.min(appealsTotalPages, p + 1))}
+                          disabled={appealsPage >= appealsTotalPages}
+                          className="p-2 rounded-lg glass border border-green-500/10 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4 text-green-400" />
+                        </button>
+                      </div>
+                    )}
+                    </>
                   )}
                 </motion.div>
               )}

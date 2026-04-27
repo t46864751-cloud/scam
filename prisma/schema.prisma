@@ -21,6 +21,7 @@ model User {
   searchLogs  SearchLog[]
   comments    Comment[]
   tags        UserTag[]
+  appeals     Appeal[]
 }
 
 model UserTag {
@@ -60,6 +61,7 @@ model Scammer {
   comments    Comment[]
   votes       Vote[]
   nameHistory ScammerNameHistory[]
+  appeals     Appeal[]
 }
 
 model ScammerNameHistory {
@@ -138,6 +140,22 @@ model ScammerStatus {
   sortOrder Int      @default(0)
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Appeal {
+  id          String   @id @default(cuid())
+  scammerId   String
+  userId      String?
+  proofLink   String   @default("")
+  description String   @default("")
+  status      String   @default("pending") // "pending", "accepted", "rejected", "banned"
+  createdAt   DateTime @default(now())
+
+  scammer Scammer @relation(fields: [scammerId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id])
+
+  @@index([scammerId])
+  @@index([status])
 }
 
 model Complaint {

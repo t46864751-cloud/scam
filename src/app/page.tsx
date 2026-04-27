@@ -38,6 +38,7 @@ import {
   Database,
   FileText,
   Clock,
+  Scale,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1284,6 +1285,146 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   )
 }
 
+// ==================== APPEAL MODAL ====================
+function AppealModal({ scammer, onClose }: { scammer: any; onClose: () => void }) {
+  const { data: session } = useSession()
+  const [proofLink, setProofLink] = useState('')
+  const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!description.trim() || description.trim().length < 10) {
+      toast.error('Описание должно быть минимум 10 символов')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/appeals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scammerId: scammer.id,
+          proofLink: proofLink.trim(),
+          description: description.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error)
+        return
+      }
+      toast.success('Апелляция отправлена!')
+      onClose()
+    } catch {
+      toast.error('Ошибка отправки')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        transition={{ duration: 0.25 }}
+        style={{ backgroundColor: 'var(--overlay)' }}
+      />
+      <motion.div
+        initial={{ y: 120, opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+        animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
+        exit={{ y: 80, opacity: 0, scale: 0.92, filter: 'blur(6px)', transition: { duration: 0.3, ease: [0.36, 0, 0.66, -0.56] } }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-lg mx-4 mb-20 sm:mb-0 max-h-[90dvh] overflow-y-auto"
+      >
+        <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                <Scale className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Подать апелляцию</h3>
+                <p className="text-xs text-muted-foreground">на {scammer.name}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Ссылка на доказательства невиновности</label>
+              <Input
+                placeholder="https://t.me/... или любая ссылка"
+                value={proofLink}
+                onChange={(e) => setProofLink(e.target.value)}
+                className="h-12 rounded-xl bg-secondary border-border"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Описание *</label>
+              <textarea
+                placeholder="Опишите почему этот человек не виноват, приведите доказательства..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full h-28 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-orange-500/50 placeholder:text-muted-foreground"
+                rows={4}
+                maxLength={2000}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
+                Киньте скриншоты доказательств невиновности в чат{' '}
+                <a href="https://t.me/wocmf" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-1">@wocmf</a>,{' '}
+                копируйте ссылку и вставьте в поле выше.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="flex-1 h-12 rounded-xl font-semibold"
+              >
+                Закрыть
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !description.trim() || description.trim().length < 10}
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white font-semibold"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Отправить
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ==================== SCAMER DETAIL MODAL ====================
 function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => void }) {
   const { data: session } = useSession()
@@ -1296,6 +1437,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
   const [commentTotalPages, setCommentTotalPages] = useState(1)
   const [commentTotal, setCommentTotal] = useState(0)
   const [showNameHistory, setShowNameHistory] = useState(false)
+  const [showAppeal, setShowAppeal] = useState(false)
 
   const loadComments = useCallback((scammerId: string, page: number) => {
     setLoadingComments(true)
@@ -1662,6 +1804,17 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 </p>
               </div>
             )}
+
+            {/* Appeal button */}
+            <div className="mt-4">
+              <Button
+                onClick={() => setShowAppeal(true)}
+                className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-600/80 to-red-500/80 hover:from-orange-600 hover:to-red-500 text-white font-semibold text-sm"
+              >
+                <Scale className="w-4 h-4 mr-2" />
+                Подать апелляцию
+              </Button>
+            </div>
           </TiltCard>
         </motion.div>
     </motion.div>
@@ -1669,6 +1822,12 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
       scammer={showNameHistory ? scammer : null}
       onClose={() => setShowNameHistory(false)}
     />
+    {showAppeal && (
+      <AppealModal
+        scammer={scammer}
+        onClose={() => setShowAppeal(false)}
+      />
+    )}
     </>
   )
 }
