@@ -1382,7 +1382,7 @@ function AppealModal({ scammer, onClose }: { scammer: any; onClose: () => void }
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full h-28 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-orange-500/50 placeholder:text-muted-foreground"
                 rows={4}
-                maxLength={2000}
+                maxLength={100}
               />
               <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
                 Киньте скриншоты доказательств невиновности в чат{' '}

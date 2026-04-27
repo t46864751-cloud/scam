@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       db.appeal.findMany({
         where,
         include: {
-          scammer: { select: { id: true, name: true, status: true, statusLabel: true, statusColor: true, statusTextColor: true } },
+          scammer: { select: { id: true, name: true, status: true } },
           user: { select: { id: true, username: true, role: true } },
         },
         orderBy: { createdAt: 'desc' },

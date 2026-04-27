@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Описание должно быть минимум 10 символов' }, { status: 400 })
     }
 
-    if (description.trim().length > 2000) {
-      return NextResponse.json({ error: 'Описание слишком длинное (макс. 2000 символов)' }, { status: 400 })
+    if (description.trim().length > 100) {
+      return NextResponse.json({ error: 'Описание слишком длинное (макс. 100 символов)' }, { status: 400 })
     }
 
     // Check scammer exists
