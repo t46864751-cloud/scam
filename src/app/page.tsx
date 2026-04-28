@@ -735,14 +735,14 @@ function SearchView() {
         </div>
 
         <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl opacity-30 group-focus-within:opacity-60 blur transition-opacity" />
-          <div className="relative flex flex-col gap-2 p-1.5">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl opacity-30 group-hover:opacity-50 group-focus-within:opacity-60 blur transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/20" />
+          <div className="relative flex flex-col gap-2 p-1.5 transition-transform duration-300 group-hover:scale-[1.01]">
             <Input
               placeholder="Имя скамера..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="h-12 rounded-xl bg-background/80 border-0 focus-visible:ring-0 px-4 text-base"
+              className="h-12 rounded-xl bg-background/80 border-0 focus-visible:ring-0 px-4 text-base transition-all duration-300"
             />
             <div className="flex gap-2">
               <Input
@@ -1775,13 +1775,13 @@ function StatsView() {
       exit={{ opacity: 0, y: -10 }}
       className="space-y-5"
     >
-      <div className="pt-6">
+      <div className="pt-6 text-center">
         <h2 className="text-2xl font-bold">Статистика</h2>
         <p className="text-sm text-muted-foreground mt-1">Общая информация о системе</p>
       </div>
 
       {/* Overview */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5 px-2">
         {[
           { label: 'Всего скамеров', value: stats.totalScammers, icon: Shield, color: 'text-red-500' },
           { label: 'Всего заявок', value: stats.totalSubmissions, icon: FileText, color: 'text-yellow-500' },
@@ -1793,21 +1793,21 @@ function StatsView() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="glass rounded-xl p-4"
+            className="glass rounded-xl p-3"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <s.icon className={`w-4 h-4 ${s.color}`} />
-              <span className="text-xs text-muted-foreground">{s.label}</span>
+            <div className="flex items-center gap-2 mb-1">
+              <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+              <span className="text-[11px] text-muted-foreground">{s.label}</span>
             </div>
-            <p className="text-2xl font-bold">{s.value}</p>
+            <p className="text-xl font-bold">{s.value}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Today stats */}
-      <div>
-        <p className="text-xs text-muted-foreground mb-3 font-medium">За сегодня</p>
-        <div className="grid grid-cols-3 gap-3">
+      <div className="px-2">
+        <p className="text-xs text-muted-foreground mb-2 font-medium">За сегодня</p>
+        <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Поисков', value: stats.searchesToday, icon: Search, color: 'text-cyan-500' },
             { label: 'Лайков', value: stats.likesToday, icon: TrendingUp, color: 'text-green-500' },
@@ -1818,10 +1818,10 @@ function StatsView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (i + 4) * 0.05 }}
-              className="glass rounded-xl p-3 text-center"
+              className="glass rounded-xl p-2.5 text-center"
             >
-              <s.icon className={`w-4 h-4 ${s.color} mx-auto mb-1`} />
-              <p className="text-lg font-bold">{s.value}</p>
+              <s.icon className={`w-3.5 h-3.5 ${s.color} mx-auto mb-0.5`} />
+              <p className="text-base font-bold">{s.value}</p>
               <p className="text-[10px] text-muted-foreground">{s.label}</p>
             </motion.div>
           ))}
@@ -1829,22 +1829,22 @@ function StatsView() {
       </div>
 
       {/* Status breakdown */}
-      <div>
-        <p className="text-xs text-muted-foreground mb-3 font-medium">По статусам</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass rounded-xl p-4">
+      <div className="px-2">
+        <p className="text-xs text-muted-foreground mb-2 font-medium">По статусам</p>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="glass rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-xs text-muted-foreground">Скам</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-[11px] text-muted-foreground">Скам</span>
             </div>
-            <p className="text-2xl font-bold text-red-500">{stats.scamCount}</p>
+            <p className="text-xl font-bold text-red-500">{stats.scamCount}</p>
           </div>
-          <div className="glass rounded-xl p-4">
+          <div className="glass rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-muted-foreground">Проверено</span>
+              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-[11px] text-muted-foreground">Проверено</span>
             </div>
-            <p className="text-2xl font-bold text-green-500">{stats.verifiedCount}</p>
+            <p className="text-xl font-bold text-green-500">{stats.verifiedCount}</p>
           </div>
         </div>
       </div>

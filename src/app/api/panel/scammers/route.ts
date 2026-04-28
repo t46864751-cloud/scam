@@ -229,6 +229,10 @@ export async function DELETE(req: NextRequest) {
     }
 
     await db.comment.deleteMany({ where: { scammerId: id } })
+    await db.vote.deleteMany({ where: { scammerId: id } })
+    await db.searchLog.deleteMany({ where: { scammerId: id } })
+    await db.appeal.deleteMany({ where: { scammerId: id } })
+    await db.submission.updateMany({ where: { scammerId: id }, data: { scammerId: null } })
     await db.scammer.delete({ where: { id } })
     return NextResponse.json({ message: 'Удалено' })
   } catch (error) {
