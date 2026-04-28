@@ -496,7 +496,8 @@ function FloatingScammers() {
                 >
                   <div
                     onClick={() => setSelectedScammer(scammer)}
-                    className={`cursor-pointer rounded-2xl bg-gradient-to-br ${colors[i % colors.length]} backdrop-blur-md border border-border p-4 h-full flex flex-col transition-shadow hover:shadow-lg hover:shadow-blue-500/10`}
+                    className={`cursor-pointer rounded-2xl backdrop-blur-md border p-4 h-full flex flex-col transition-shadow hover:shadow-lg`}
+                    style={{ ...statusBgStyle(scammer.statusColor), boxShadow: scammer.statusColor ? `0 0 20px ${scammer.statusColor}08` : undefined }}
                   >
                     {/* Avatar + status */}
                     <div className="flex items-center gap-2 mb-3">
@@ -785,7 +786,8 @@ function SearchView() {
                 >
                   <div
                     onClick={() => setSelectedScammer(scammer)}
-                    className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
+                    className="rounded-2xl border p-4 cursor-pointer hover:brightness-110 transition-all duration-300"
+                    style={statusBgStyle(scammer.statusColor)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -906,7 +908,8 @@ function Top10View() {
             >
               <div
                 onClick={() => setSelectedScammer(item)}
-                className="glass rounded-2xl p-4 cursor-pointer hover:bg-muted transition-shadow duration-300"
+                className="rounded-2xl border p-4 cursor-pointer hover:brightness-110 transition-all duration-300"
+                style={statusBgStyle(item.statusColor)}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative shrink-0">
@@ -1444,7 +1447,10 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
         onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
       >
-          <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-5 sm:p-6">
+          <div
+            className="rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 backdrop-blur-md border"
+            style={statusBgStyle(scammer.statusColor)}
+          >
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 min-w-0">
@@ -2339,6 +2345,18 @@ function CopyButton({ text, label }: { text: string | (() => string); label?: st
 }
 
 // ==================== STATUS BADGE ====================
+
+// Map hex color to a subtle card background tint
+function statusBgStyle(color?: string): React.CSSProperties {
+  if (!color) return { background: 'rgba(239, 68, 68, 0.06)' }
+  // Convert hex to rgb for alpha use
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+  return { background: `rgba(${r}, ${g}, ${b}, 0.06)`, borderColor: `rgba(${r}, ${g}, ${b}, 0.12)` }
+}
+
 function StatusBadge({ status, size = 'md', color, textColor }: { status: string; size?: 'sm' | 'md'; color?: string; textColor?: string }) {
   const sizeClasses = size === 'sm' ? 'text-[10px] px-2 py-0' : 'text-xs px-2.5 py-0.5'
   const glowColor = color || '#ef4444'
