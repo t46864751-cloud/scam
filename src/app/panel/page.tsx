@@ -11,7 +11,7 @@ import {
   Loader2, Eye, EyeOff, X, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight,
   Terminal, Database, Activity, Settings, LogOut, RefreshCw, Tag, MessageSquare,
   Gamepad2, Play, Pause,
-  Download, Clock, Scale, Menu,
+  Download, Clock, Scale, Menu, Link as LinkIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
