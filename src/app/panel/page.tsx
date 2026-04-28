@@ -2013,6 +2013,18 @@ export default function PanelPage() {
                                 <>
                                   <Button
                                     size="sm"
+                                    onClick={() => {
+                                      setNewName(c.name)
+                                      setNewDesc(c.reason || '')
+                                      setTab('add')
+                                    }}
+                                    className="h-7 bg-blue-600 hover:bg-blue-700 text-white font-mono text-[10px] rounded-lg"
+                                  >
+                                    <Database className="w-3 h-3 mr-1" />
+                                    Записать
+                                  </Button>
+                                  <Button
+                                    size="sm"
                                     onClick={() => handleComplaintAction(c.id, 'resolved')}
                                     className="h-7 bg-green-600 hover:bg-green-700 text-white font-mono text-[10px] rounded-lg"
                                   >
