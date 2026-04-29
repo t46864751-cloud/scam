@@ -183,7 +183,7 @@ function AuthView() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
                 required
-                minLength={6}
+                minLength={8}
               />
               <button
                 type="button"
@@ -346,7 +346,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-12 rounded-xl bg-secondary border-border focus:border-blue-500/50 pl-4 pr-12"
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                 <button
                   type="button"
@@ -356,7 +356,7 @@ function AuthModal({ onClose }: { onClose: () => void }) {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
                 {!isLogin && (
-                  <p className="text-[10px] text-muted-foreground mt-1 pl-1">Минимум 6 символов</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 pl-1">Минимум 8 символов</p>
                 )}
               </div>
 
@@ -1449,7 +1449,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
       >
           <div
             className="rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 backdrop-blur-md border"
-            style={statusBgStyle(scammer.statusColor)}
+            style={statusBgStyle(scammer.statusColor, true)}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
@@ -1535,22 +1535,48 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     </div>
                   </div>
                 )}
-                {scammer.proofLink && (
-                  <div className="glass rounded-xl p-3 flex items-center gap-2">
-                    <LinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">Доказательство</p>
-                      <a
-                        href={scammer.proofLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 truncate block"
-                      >
-                        {scammer.proofLink}
+                {scammer.proofLink && (() => {
+                  const isProofImage = /\.(jpe?g|png|webp|gif|bmp|avif)(\?.*)?$/i.test(scammer.proofLink)
+                  return isProofImage ? (
+                    <div className="glass rounded-xl p-2 group/proof relative">
+                      <div className="flex items-center gap-2 mb-1.5 px-1">
+                        <LinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                        <p className="text-xs text-muted-foreground">Доказательство</p>
+                      </div>
+                      <a href={scammer.proofLink} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={scammer.proofLink}
+                          alt="Proof"
+                          className="w-full rounded-lg border border-border object-cover aspect-video transition-transform duration-200 group-hover/proof:scale-[1.02]"
+                          loading="lazy"
+                        />
                       </a>
+                      <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center opacity-0 group-hover/proof:opacity-100 transition-opacity duration-200">
+                        <img
+                          src={scammer.proofLink}
+                          alt="Proof preview"
+                          className="max-w-[300px] max-h-[220px] rounded-xl border-2 border-blue-400/40 shadow-2xl shadow-black/50 object-contain"
+                          loading="lazy"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="glass rounded-xl p-3 flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">Доказательство</p>
+                        <a
+                          href={scammer.proofLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 truncate block"
+                        >
+                          {scammer.proofLink}
+                        </a>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
@@ -1581,15 +1607,25 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                     if (!isUrl) return null
                     const isImage = /\.(jpe?g|png|webp|gif|bmp|avif)(\?.*)?$/i.test(src)
                     return isImage ? (
-                      <a key={i} href={src} target="_blank" rel="noopener noreferrer">
-                        <img
-                          key={i}
-                          src={src}
-                          alt={`Screenshot ${i + 1}`}
-                          className="w-full rounded-xl border border-border object-cover aspect-[4/3]"
-                          loading="lazy"
-                        />
-                      </a>
+                      <div key={i} className="group/screenshot relative">
+                        <a href={src} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={src}
+                            alt={`Screenshot ${i + 1}`}
+                            className="w-full rounded-xl border border-border object-cover aspect-[4/3] transition-transform duration-200 group-hover/screenshot:scale-[1.03] group-hover/screenshot:border-blue-400/50"
+                            loading="lazy"
+                          />
+                        </a>
+                        {/* Hover preview - enlarged */}
+                        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center opacity-0 group-hover/screenshot:opacity-100 transition-opacity duration-200">
+                          <img
+                            src={src}
+                            alt={`Preview ${i + 1}`}
+                            className="max-w-[280px] max-h-[210px] rounded-xl border-2 border-blue-400/40 shadow-2xl shadow-black/50 object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
                     ) : (
                       <a
                         key={i}
@@ -2347,14 +2383,15 @@ function CopyButton({ text, label }: { text: string | (() => string); label?: st
 // ==================== STATUS BADGE ====================
 
 // Map hex color to a subtle card background tint
-function statusBgStyle(color?: string): React.CSSProperties {
-  if (!color) return { background: 'rgba(239, 68, 68, 0.06)' }
-  // Convert hex to rgb for alpha use
+function statusBgStyle(color?: string, detail?: boolean): React.CSSProperties {
+  const alpha = detail ? 0.12 : 0.06
+  const borderAlpha = detail ? 0.24 : 0.12
+  if (!color) return { background: `rgba(239, 68, 68, ${alpha})`, borderColor: `rgba(239, 68, 68, ${borderAlpha})` }
   const hex = color.replace('#', '')
   const r = parseInt(hex.substring(0, 2), 16)
   const g = parseInt(hex.substring(2, 4), 16)
   const b = parseInt(hex.substring(4, 6), 16)
-  return { background: `rgba(${r}, ${g}, ${b}, 0.06)`, borderColor: `rgba(${r}, ${g}, ${b}, 0.12)` }
+  return { background: `rgba(${r}, ${g}, ${b}, ${alpha})`, borderColor: `rgba(${r}, ${g}, ${b}, ${borderAlpha})` }
 }
 
 function StatusBadge({ status, size = 'md', color, textColor }: { status: string; size?: 'sm' | 'md'; color?: string; textColor?: string }) {
