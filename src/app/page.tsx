@@ -496,7 +496,7 @@ function FloatingScammers() {
                 >
                   <div
                     onClick={() => setSelectedScammer(scammer)}
-                    className={`cursor-pointer rounded-2xl backdrop-blur-md border p-4 h-full flex flex-col transition-shadow hover:shadow-lg`}
+                    className={`cursor-pointer rounded-2xl backdrop-blur-md border p-4 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:scale-[1.02]`}
                     style={{ ...statusBgStyle(scammer.statusColor), boxShadow: scammer.statusColor ? `0 0 20px ${scammer.statusColor}08` : undefined }}
                   >
                     {/* Avatar + status */}
@@ -786,7 +786,7 @@ function SearchView() {
                 >
                   <div
                     onClick={() => setSelectedScammer(scammer)}
-                    className="rounded-2xl border p-4 cursor-pointer hover:brightness-110 transition-all duration-300"
+                    className="rounded-2xl border p-4 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                     style={statusBgStyle(scammer.statusColor)}
                   >
                     <div className="flex items-center justify-between">
@@ -908,7 +908,7 @@ function Top10View() {
             >
               <div
                 onClick={() => setSelectedScammer(item)}
-                className="rounded-2xl border p-4 cursor-pointer hover:brightness-110 transition-all duration-300"
+                className="rounded-2xl border p-4 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                 style={statusBgStyle(item.statusColor)}
               >
                 <div className="flex items-center gap-3">
@@ -1835,10 +1835,10 @@ function StatsView() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="glass rounded-xl p-3"
+            className="glass rounded-xl p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:scale-[1.03]"
           >
             <div className="flex items-center gap-2 mb-1">
-              <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+              <s.icon className={`w-3.5 h-3.5 ${s.color} transition-transform duration-300 group-hover:scale-125`} />
               <span className="text-[11px] text-muted-foreground">{s.label}</span>
             </div>
             <p className="text-xl font-bold">{s.value}</p>
@@ -1860,9 +1860,9 @@ function StatsView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (i + 4) * 0.05 }}
-              className="glass rounded-xl p-2.5 text-center"
+              className="glass rounded-xl p-2.5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:scale-[1.05]"
             >
-              <s.icon className={`w-3.5 h-3.5 ${s.color} mx-auto mb-0.5`} />
+              <s.icon className={`w-3.5 h-3.5 ${s.color} mx-auto mb-0.5 transition-transform duration-300 group-hover:scale-110`} />
               <p className="text-base font-bold">{s.value}</p>
               <p className="text-[10px] text-muted-foreground">{s.label}</p>
             </motion.div>
@@ -1874,16 +1874,16 @@ function StatsView() {
       <div className="px-2">
         <p className="text-xs text-muted-foreground mb-2 font-medium">По статусам</p>
         <div className="grid grid-cols-2 gap-2.5">
-          <div className="glass rounded-xl p-3">
+          <div className="glass rounded-xl p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
             <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+              <AlertTriangle className="w-3.5 h-3.5 text-red-500 transition-transform duration-300 hover:scale-125" />
               <span className="text-[11px] text-muted-foreground">Скам</span>
             </div>
             <p className="text-xl font-bold text-red-500">{stats.scamCount}</p>
           </div>
-          <div className="glass rounded-xl p-3">
+          <div className="glass rounded-xl p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+              <CheckCircle className="w-3.5 h-3.5 text-green-500 transition-transform duration-300 hover:scale-125" />
               <span className="text-[11px] text-muted-foreground">Проверено</span>
             </div>
             <p className="text-xl font-bold text-green-500">{stats.verifiedCount}</p>
@@ -2237,7 +2237,7 @@ function ProfileView({ user }: { user: any }) {
         onMouseLeave={handleLogoutUp}
         onTouchStart={handleLogoutDown}
         onTouchEnd={handleLogoutUp}
-        className={`w-full mt-4 py-3 rounded-2xl border transition-all flex items-center justify-center gap-2 ${drunkMode ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 animate-drunk-btn' : 'border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'}`}
+        className={`w-full mt-4 py-3 rounded-2xl border transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] ${drunkMode ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 animate-drunk-btn' : 'border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'}`}
       >
         <LogOut className="w-4 h-4" />
         {drunkMode ? 'Протрезветь' : 'Выйти'}
@@ -2258,7 +2258,7 @@ function ProfileView({ user }: { user: any }) {
             toast.error('Ошибка')
           }
         }}
-        className="w-full mt-3 py-3 rounded-2xl border border-red-500/20 text-red-500/60 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/5 transition-all flex items-center justify-center gap-2"
+        className="w-full mt-3 py-3 rounded-2xl border border-red-500/20 text-red-500/60 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/5 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02]"
       >
         <Trash2 className="w-4 h-4" />
         Удалить аккаунт
@@ -2320,8 +2320,8 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
     <div className={`flex items-center ${sz}`}>
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('like') }}
-        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
-          myVote === 'like' ? 'text-green-600 dark:text-green-400 bg-green-500/10 dark:bg-green-500/20' : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-400 hover:bg-green-500/10'
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all duration-200 ${
+          myVote === 'like' ? 'text-green-600 dark:text-green-400 bg-green-500/10 dark:bg-green-500/20' : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-400 hover:bg-green-500/10 hover:scale-110'
         } ${loading ? 'opacity-50' : ''}`}
       >
         <ThumbsUp className={iconSz} />
@@ -2329,8 +2329,8 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('neutral') }}
-        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
-          myVote === 'neutral' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 dark:bg-yellow-500/20' : 'text-muted-foreground hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-500/10'
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all duration-200 ${
+          myVote === 'neutral' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 dark:bg-yellow-500/20' : 'text-muted-foreground hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-500/10 hover:scale-110'
         } ${loading ? 'opacity-50' : ''}`}
       >
         <span className={`${iconSz} font-bold leading-none`}>~</span>
@@ -2338,8 +2338,8 @@ function LikeButton({ scammerId, initialLikes, initialDislikes, large }: { scamm
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); handleVote('dislike') }}
-        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all ${
-          myVote === 'dislike' ? 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' : 'text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10'
+        className={`flex items-center gap-1 rounded-lg ${btnPad} transition-all duration-200 ${
+          myVote === 'dislike' ? 'text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' : 'text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 hover:scale-110'
         } ${loading ? 'opacity-50' : ''}`}
       >
         <ThumbsDown className={iconSz} />
@@ -2384,8 +2384,8 @@ function CopyButton({ text, label }: { text: string | (() => string); label?: st
 
 // Map hex color to a subtle card background tint
 function statusBgStyle(color?: string, detail?: boolean): React.CSSProperties {
-  const alpha = detail ? 0.12 : 0.06
-  const borderAlpha = detail ? 0.24 : 0.12
+  const alpha = detail ? 0.03 : 0.06
+  const borderAlpha = detail ? 0.06 : 0.12
   if (!color) return { background: `rgba(239, 68, 68, ${alpha})`, borderColor: `rgba(239, 68, 68, ${borderAlpha})` }
   const hex = color.replace('#', '')
   const r = parseInt(hex.substring(0, 2), 16)
@@ -2450,10 +2450,12 @@ function BottomNav() {
                 <motion.button
                   key="plus"
                   whileTap={{ scale: 0.85 }}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   onClick={() => setCreateModalOpen(true)}
                   className="relative -mt-5"
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl transition-all duration-300 ring-1 ring-white/20 dark:ring-white/20 ring-inset">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:shadow-xl hover:rotate-90 transition-all duration-500 ring-1 ring-white/20 dark:ring-white/20 ring-inset">
                     <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
                   </div>
                 </motion.button>
@@ -2468,11 +2470,13 @@ function BottomNav() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all duration-300 ${
-                  isActive ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'
+                  isActive ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground hover:-translate-y-0.5'
                 }`}
               >
                 <motion.div
                   whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.15, y: -2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   className="relative"
                 >
                   <Icon className="w-5 h-5" />
