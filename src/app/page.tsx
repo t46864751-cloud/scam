@@ -1448,7 +1448,7 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
         className="relative z-10 w-full max-w-lg mx-0 sm:mx-4 max-h-[100dvh] sm:max-h-[85vh] overflow-y-auto"
       >
           <div
-            className="rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 backdrop-blur-md border"
+            className="rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 backdrop-blur-[32px] border"
             style={statusBgStyle(scammer.statusColor, true)}
           >
             {/* Header */}
