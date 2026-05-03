@@ -497,6 +497,14 @@ export default function PanelPage() {
   const [newTagTextColor, setNewTagTextColor] = useState('#ffffff')
   const [newTagSparkly, setNewTagSparkly] = useState(false)
 
+  // Hidden tags
+  const [showHiddenTags, setShowHiddenTags] = useState(false)
+  const [hiddenTags, setHiddenTags] = useState<any[]>([])
+  const [hiddenTagsPage, setHiddenTagsPage] = useState(1)
+  const [hiddenTagsTotal, setHiddenTagsTotal] = useState(0)
+  const [hiddenTagsSearch, setHiddenTagsSearch] = useState('')
+  const [hiddenTagsLoading, setHiddenTagsLoading] = useState(false)
+
   // Revision
   const [revisionSub, setRevisionSub] = useState<Submission | null>(null)
   const [revisionReason, setRevisionReason] = useState('')
@@ -1059,6 +1067,53 @@ export default function PanelPage() {
     } catch {}
   }
 
+  const handleHideTag = async (tagId: string) => {
+    if (!tagsModalUser) return
+    try {
+      await fetch(`/api/panel/users/${tagsModalUser.id}/tags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagId, hidden: true }),
+      })
+      setUserTags(prev => prev.filter(t => t.id !== tagId))
+      toast.success('Тег скрыт')
+    } catch {
+      toast.error('Ошибка')
+    }
+  }
+
+  const loadHiddenTags = async (page: number, search: string) => {
+    setHiddenTagsLoading(true)
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '20' })
+      if (search) params.set('search', search)
+      const res = await fetch(`/api/panel/hidden-tags?${params}`)
+      const data = await res.json()
+      setHiddenTags(data.results || [])
+      setHiddenTagsTotal(data.total || 0)
+      setHiddenTagsPage(data.page || 1)
+    } catch {
+      toast.error('Ошибка загрузки')
+    } finally {
+      setHiddenTagsLoading(false)
+    }
+  }
+
+  const handleUnhideTag = async (tagId: string, userId: string) => {
+    try {
+      await fetch('/api/panel/hidden-tags', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagId, hidden: false }),
+      })
+      setHiddenTags(prev => prev.filter(t => t.id !== tagId))
+      setHiddenTagsTotal(prev => prev - 1)
+      toast.success('Тег показан')
+    } catch {
+      toast.error('Ошибка')
+    }
+  }
+
   const handleDeleteUser = async (userId: string, username: string) => {
     if (!confirm('Удалить пользователя ' + username + '? Все его данные будут удалены безвозвратно.')) return
     if (!confirm('Точно удалить ' + username + '? Это действие необратимо.')) return
@@ -1166,6 +1221,13 @@ export default function PanelPage() {
 
           <div className="space-y-2 pt-4 border-t border-green-500/10">
             <button
+              onClick={() => { setShowHiddenTags(true); loadHiddenTags(1, '') }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-mono text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
+            >
+              <EyeOff className="w-4 h-4" />
+              Скрытые теги
+            </button>
+            <button
               onClick={() => router.push('/')}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-mono text-sm text-green-600 hover:text-green-400 transition-colors"
             >
@@ -1193,6 +1255,9 @@ export default function PanelPage() {
               <span className="font-mono font-bold text-green-400">ADMIN</span>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => { setShowHiddenTags(true); loadHiddenTags(1, '') }} className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-400" title="Скрытые теги">
+                <EyeOff className="w-4 h-4" />
+              </button>
               <button onClick={() => router.push('/')} className="p-2 rounded-lg hover:bg-green-500/10">
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -1778,7 +1843,11 @@ export default function PanelPage() {
                                   )}
                                 </div>
                                 <p className="text-xs text-green-600 font-mono">
-                                  от {sub.user?.username || 'неизвестно'} | {new Date(sub.createdAt).toLocaleDateString('ru-RU')}
+                                  {sub.isGuest ? (
+                                    <>от <span className="text-yellow-400">Гость</span> | IP: {sub.guestIp || '?'} | {new Date(sub.createdAt).toLocaleDateString('ru-RU')}</>
+                                  ) : (
+                                    <>от {sub.user?.username || 'неизвестно'} | {new Date(sub.createdAt).toLocaleDateString('ru-RU')}</>
+                                  )}
                                   {sub.telegramUserId && ` | Telegram ID: ${sub.telegramUserId}`}
                                   {sub.scamAmount && ` | ${sub.scamAmount} ${sub.scamCurrency || ''}`}
                                 </p>
@@ -1846,7 +1915,26 @@ export default function PanelPage() {
                             )}
 
                             {(sub.status === 'approved' || sub.status === 'rejected' || sub.status === 'revision') && (
-                              <div className="flex justify-end">
+                              <div className="flex justify-end gap-2">
+                                {sub.isGuest && sub.guestIp && (
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      if (!confirm(`Забанить IP ${sub.guestIp}?`)) return
+                                      try {
+                                        await fetch('/api/panel/ban-ip', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ ip: sub.guestIp }),
+                                        })
+                                        toast.success(`IP ${sub.guestIp} заблокирован`)
+                                      } catch { toast.error('Ошибка') }
+                                    }}
+                                    className="h-7 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 font-mono text-[10px] rounded-lg px-2"
+                                  >
+                                    Забанить IP
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   onClick={() => handleDeleteSubmission(sub.id)}
@@ -2891,12 +2979,21 @@ export default function PanelPage() {
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: tag.textColor }} title="Цвет текста" />
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteTag(tag.id)}
-                        className="p-1 rounded hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleHideTag(tag.id)}
+                          className="p-1 rounded hover:bg-yellow-500/10 text-yellow-400 hover:text-yellow-300 transition-colors"
+                          title="Скрыть тег"
+                        >
+                          <EyeOff className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="p-1 rounded hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2975,6 +3072,115 @@ export default function PanelPage() {
         onClose={function closeHist() { setNameHistoryScammer(null) }}
         onRollback={function afterRollback() { loadScammers(scammerPage, scammerSearch) }}
       />
+
+      {/* Hidden Tags Modal */}
+      <AnimatePresence>
+        {showHiddenTags && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowHiddenTags(false)}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-lg glass rounded-2xl p-6 border border-yellow-500/20 max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-mono font-bold text-yellow-300">Скрытые теги ({hiddenTagsTotal})</h3>
+                <button onClick={() => setShowHiddenTags(false)} className="p-1 rounded hover:bg-yellow-500/10">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Поиск по тегу или юзернейму..."
+                    value={hiddenTagsSearch}
+                    onChange={(e) => setHiddenTagsSearch(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { loadHiddenTags(1, hiddenTagsSearch) } }}
+                    className="h-9 rounded-lg bg-black/30 border-yellow-500/20 text-sm font-mono"
+                  />
+                  <Button onClick={() => loadHiddenTags(1, hiddenTagsSearch)} size="sm" className="h-9 px-3 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 font-mono text-xs">
+                    Найти
+                  </Button>
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {hiddenTagsLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-5 h-5 animate-spin text-yellow-400" />
+                  </div>
+                ) : hiddenTags.length === 0 ? (
+                  <div className="text-center py-10">
+                    <p className="text-yellow-600 font-mono text-sm">Скрытых тегов нет</p>
+                  </div>
+                ) : (
+                  hiddenTags.map(tag => (
+                    <div key={tag.id} className="flex items-center justify-between glass rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                          style={{
+                            backgroundColor: tag.color,
+                            color: tag.textColor,
+                            boxShadow: tag.sparkly ? `0 0 8px ${tag.color}80` : 'none',
+                          }}
+                        >
+                          {tag.sparkly && <span className="mr-0.5">✨</span>}
+                          {tag.text}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-mono truncate">
+                          @{tag.user?.username || '?'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleUnhideTag(tag.id, tag.userId)}
+                        className="p-1 rounded hover:bg-green-500/10 text-green-400 hover:text-green-300 transition-colors shrink-0 ml-2"
+                        title="Показать тег"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {!hiddenTagsLoading && hiddenTagsTotal > 20 && (
+                <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-yellow-500/10">
+                  <button
+                    onClick={() => loadHiddenTags(hiddenTagsPage - 1, hiddenTagsSearch)}
+                    disabled={hiddenTagsPage <= 1}
+                    className="p-1.5 rounded hover:bg-yellow-500/10 disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {hiddenTagsPage} / {Math.ceil(hiddenTagsTotal / 20)}
+                  </span>
+                  <button
+                    onClick={() => loadHiddenTags(hiddenTagsPage + 1, hiddenTagsSearch)}
+                    disabled={hiddenTagsPage >= Math.ceil(hiddenTagsTotal / 20)}
+                    className="p-1.5 rounded hover:bg-yellow-500/10 disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

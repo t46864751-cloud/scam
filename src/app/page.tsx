@@ -2435,7 +2435,7 @@ function BottomNav() {
   const tabs = [
     { id: 'search' as const, icon: Search, label: 'Поиск' },
     { id: 'top10' as const, icon: TrendingUp, label: 'Топ-10' },
-    ...(isLogged ? [{ id: 'plus' as const, icon: Plus, label: '' }] : []),
+    ...[{ id: 'plus' as const, icon: Plus, label: '' }],
     { id: 'stats' as const, icon: BarChart3, label: 'Стат.' },
     { id: 'profile' as const, icon: User, label: 'Профиль' },
   ]
@@ -2537,7 +2537,7 @@ export default function Home() {
       </main>
       <BottomNav />
       <AnimatePresence>
-        {isCreateModalOpen && session?.user && <CreateModal key="create-modal" open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />}
+        {isCreateModalOpen && <CreateModal key="create-modal" open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />}
       </AnimatePresence>
       <AnimatePresence>
         {selectedScammer && <ScamerDetailModal key="detail-modal" scammer={selectedScammer} onClose={() => setSelectedScammer(null)} />}
