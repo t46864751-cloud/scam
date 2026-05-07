@@ -39,6 +39,7 @@ import {
   FileText,
   Clock,
   Scale,
+  PlusCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -588,6 +589,7 @@ function ComplaintCard({ name }: { name: string }) {
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const { openCreateModalWith } = useAppStore()
 
   const handleSubmit = async () => {
     if (sent) return
@@ -612,6 +614,10 @@ function ComplaintCard({ name }: { name: string }) {
     }
   }
 
+  const handleAddInfo = () => {
+    openCreateModalWith(name, reason.trim())
+  }
+
   if (sent) {
     return (
       <div className="glass rounded-2xl p-4 max-w-sm mx-auto">
@@ -625,7 +631,7 @@ function ComplaintCard({ name }: { name: string }) {
   }
 
   return (
-    <div className="glass rounded-2xl p-4 max-w-sm mx-auto">
+    <div className="glass rounded-2xl p-4 max-w-md mx-auto">
       <div className="flex items-center gap-3 mb-3">
         <Avatar className="h-10 w-10 shrink-0">
           <AvatarFallback className="bg-gradient-to-br from-gray-400 to-gray-500 text-white font-semibold">
@@ -646,18 +652,29 @@ function ComplaintCard({ name }: { name: string }) {
           maxLength={500}
         />
       </div>
-      <Button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="w-full h-10 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+      <div className="flex gap-2">
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Пожаловаться
+            </span>
+          )}
+        </Button>
+        <Button
+          onClick={handleAddInfo}
+          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold text-sm"
+        >
           <span className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            Пожаловаться
+            <PlusCircle className="w-4 h-4" />
+            Добавить доп сведения
           </span>
-        )}
-      </Button>
+        </Button>
+      </div>
     </div>
   )
 }
@@ -956,6 +973,7 @@ function Top10View() {
 
 // ==================== CREATE MODAL ====================
 function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { createModalInitialName, createModalInitialData } = useAppStore()
   const [name, setName] = useState('')
   const [data, setData] = useState('')
   const [telegramUserId, setTelegramUserId] = useState('')
@@ -965,6 +983,19 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [loading, setLoading] = useState(false)
   const [statusTypes, setStatusTypes] = useState<any[]>([])
   const [selectedStatus, setSelectedStatus] = useState('scam')
+  const filledRef = useRef(false)
+
+  // Pre-fill name and data when opened from complaint
+  useEffect(() => {
+    if (open && createModalInitialName && !filledRef.current) {
+      setName(createModalInitialName)
+      setData(createModalInitialData)
+      filledRef.current = true
+    }
+    if (!open) {
+      filledRef.current = false
+    }
+  }, [open, createModalInitialName, createModalInitialData])
 
   useEffect(() => {
     fetch('/api/status-types').then(r => r.json()).then(d => {
