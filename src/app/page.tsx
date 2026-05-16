@@ -586,53 +586,11 @@ function FloatingScammers() {
 
 // ==================== COMPLAINT CARD ====================
 function ComplaintCard({ name }: { name: string }) {
-  const [reason, setReason] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
   const { openCreateModalWith } = useAppStore()
 
-  const handleSubmit = async () => {
-    if (sent) return
-    setLoading(true)
-    try {
-      const res = await fetch('/api/complaints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, reason: reason.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error)
-        return
-      }
-      toast.success('Жалоба отправлена! Админ рассмотрит её')
-      setSent(true)
-    } catch {
-      toast.error('Ошибка отправки')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAddInfo = () => {
-    openCreateModalWith(name, reason.trim())
-  }
-
-  if (sent) {
-    return (
-      <div className="glass rounded-2xl p-4 max-w-sm mx-auto">
-        <div className="text-center">
-          <p className="text-sm font-medium text-muted-foreground">
-            Жалоба на <span className="text-foreground font-semibold">{name}</span> отправлена
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="glass rounded-2xl p-4 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-3">
+    <div className="glass rounded-2xl p-5 max-w-sm mx-auto">
+      <div className="flex items-center gap-3 mb-4">
         <Avatar className="h-10 w-10 shrink-0">
           <AvatarFallback className="bg-gradient-to-br from-gray-400 to-gray-500 text-white font-semibold">
             {name.charAt(0).toUpperCase()}
@@ -643,38 +601,15 @@ function ComplaintCard({ name }: { name: string }) {
           <p className="text-xs text-muted-foreground">Не найден в базе</p>
         </div>
       </div>
-      <div className="mb-3">
-        <textarea
-          placeholder="Опишите причину жалобы (необязательно)..."
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          className="w-full h-20 rounded-xl bg-secondary border border-border p-3 text-sm resize-none focus:outline-none focus:border-blue-500/50 placeholder:text-muted-foreground"
-          maxLength={500}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-            <span className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
-              Пожаловаться
-            </span>
-          )}
-        </Button>
-        <Button
-          onClick={handleAddInfo}
-          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold text-sm"
-        >
-          <span className="flex items-center gap-2">
-            <PlusCircle className="w-4 h-4" />
-            Добавить доп сведения
-          </span>
-        </Button>
-      </div>
+      <Button
+        onClick={() => openCreateModalWith(name)}
+        className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold"
+      >
+        <span className="flex items-center gap-2">
+          <PlusCircle className="w-5 h-5" />
+          Сообщить о скаме
+        </span>
+      </Button>
     </div>
   )
 }
@@ -1009,10 +944,14 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
       return
     }
 
+    const urls = screenshotText.split('\n').map(l => l.trim()).filter(l => l.length > 0).slice(0, 3)
+    if (urls.length === 0) {
+      toast.error('Добавьте хотя бы одно доказательство (ссылка на скриншот)')
+      return
+    }
+
     setLoading(true)
     try {
-      const urls = screenshotText.split('\n').map(l => l.trim()).filter(l => l.length > 0).slice(0, 3)
-
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1186,7 +1125,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">
-                  Ссылки на доказательства (по одной на строку, макс. 3)
+                  Ссылки на доказательства (по одной на строку, макс. 3) *
                 </label>
                 <textarea
                   placeholder="https://t.me/..."
@@ -1204,7 +1143,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
               <Button
                 onClick={handleSubmit}
-                disabled={loading || !name.trim()}
+                disabled={loading || !name.trim() || !screenshotText.trim()}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold"
               >
                 {loading ? (
