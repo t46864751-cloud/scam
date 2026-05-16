@@ -1114,16 +1114,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               )}
 
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Данные / описание</label>
-                <Input
-                  placeholder="Телефон, Telegram, детали..."
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  className="h-12 rounded-xl bg-secondary border-border"
-                />
-              </div>
-
-              <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">
                   Ссылки на доказательства (по одной на строку, макс. 3) *
                 </label>
@@ -1139,6 +1129,16 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   <a href="https://t.me/wocmf" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-1">@wocmf</a>,{' '}
                   копируйте ссылку и вставьте сюда.
                 </p>
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 block">Данные / описание</label>
+                <Input
+                  placeholder="Телефон, Telegram, детали..."
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                  className="h-12 rounded-xl bg-secondary border-border"
+                />
               </div>
 
               <Button
