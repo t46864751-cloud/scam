@@ -914,6 +914,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [telegramUserId, setTelegramUserId] = useState('')
   const [scamAmount, setScamAmount] = useState('')
   const [scamCurrency, setScamCurrency] = useState('')
+  const [customCurrency, setCustomCurrency] = useState('')
   const [screenshotText, setScreenshotText] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusTypes, setStatusTypes] = useState<any[]>([])
@@ -962,7 +963,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           screenshots: urls,
           scammerStatus: selectedStatus,
           scamAmount: scamAmount.trim(),
-          scamCurrency: scamCurrency.trim(),
+          scamCurrency: (scamCurrency === 'custom' ? customCurrency : scamCurrency).trim(),
         }),
       })
 
@@ -980,6 +981,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
       setTelegramUserId('')
       setScamAmount('')
       setScamCurrency('')
+      setCustomCurrency('')
       setScreenshotText('')
       setSelectedStatus('scam')
     } catch {
@@ -1082,8 +1084,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                 {scamCurrency === 'custom' && (
                   <Input
                     placeholder="Название валюты..."
-                    value={scamCurrency === 'custom' ? '' : scamCurrency}
-                    onChange={(e) => setScamCurrency(e.target.value)}
+                    value={customCurrency}
+                    onChange={(e) => setCustomCurrency(e.target.value)}
                     className="h-10 rounded-xl bg-secondary border-border mt-2 text-sm"
                   />
                 )}
