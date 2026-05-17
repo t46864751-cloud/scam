@@ -145,6 +145,7 @@ model ScammerStatus {
   textColor String   @default("#ffffff") // badge text color (hex)
   sortOrder Int      @default(0)
   isDefault Boolean  @default(false)
+  hidden    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 

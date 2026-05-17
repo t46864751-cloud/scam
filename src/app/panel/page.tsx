@@ -595,8 +595,9 @@ export default function PanelPage() {
   }
 
   // Load status types on mount (needed for forms everywhere, not just statuses tab)
+  // Admin gets ALL statuses including hidden
   useEffect(() => {
-    fetch('/api/status-types').then(r => r.json()).then(d => {
+    fetch('/api/status-types/admin').then(r => r.json()).then(d => {
       if (d.statuses) setStatusTypes(d.statuses)
     }).catch(() => {})
   }, [])
@@ -624,7 +625,7 @@ export default function PanelPage() {
       setNewStatusKey('')
       setNewStatusColor('#6b7280')
       setNewStatusTextColor('#ffffff')
-      const r2 = await fetch('/api/status-types')
+      const r2 = await fetch('/api/status-types/admin')
       const d2 = await r2.json()
       if (d2.statuses) setStatusTypes(d2.statuses)
     } catch { toast.error('Ошибка') }
@@ -637,7 +638,7 @@ export default function PanelPage() {
       const data = await res.json()
       if (!res.ok) { toast.error(data.error); return }
       toast.success('Тип удален')
-      const r2 = await fetch('/api/status-types')
+      const r2 = await fetch('/api/status-types/admin')
       const d2 = await r2.json()
       if (d2.statuses) setStatusTypes(d2.statuses)
     } catch { toast.error('Ошибка') }
@@ -667,7 +668,26 @@ export default function PanelPage() {
       if (!res.ok) { toast.error(data.error); return }
       toast.success('Тип обновлен')
       setEditingStatusId(null)
-      const r2 = await fetch('/api/status-types')
+      const r2 = await fetch('/api/status-types/admin')
+      const d2 = await r2.json()
+      if (d2.statuses) setStatusTypes(d2.statuses)
+    } catch { toast.error('Ошибка') }
+  }
+
+  const handleToggleHidden = async (st: any) => {
+    try {
+      const res = await fetch('/api/status-types', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: st.id,
+          hidden: !st.hidden,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(st.hidden ? 'Статус показан' : 'Статус скрыт')
+      const r2 = await fetch('/api/status-types/admin')
       const d2 = await r2.json()
       if (d2.statuses) setStatusTypes(d2.statuses)
     } catch { toast.error('Ошибка') }
@@ -2504,15 +2524,28 @@ export default function PanelPage() {
                                   backgroundColor: st.color + '33',
                                   color: st.textColor,
                                   borderColor: st.color + '55',
+                                  opacity: st.hidden ? 0.5 : 1,
                                 }}
                               >
                                 {st.label}
                               </span>
                               <span className="text-xs text-green-600 font-mono">{st.key}</span>
                               {st.isDefault && <span className="text-[10px] text-muted-foreground">по умолч.</span>}
+                              {st.hidden && <span className="text-[10px] text-yellow-500 font-mono">скрыт</span>}
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: st.color }} />
+                              <button
+                                onClick={() => handleToggleHidden(st)}
+                                className="p-1 rounded hover:bg-yellow-500/20 transition-colors"
+                                title={st.hidden ? 'Показать' : 'Скрыть'}
+                              >
+                                {st.hidden ? (
+                                  <EyeOff className="w-3.5 h-3.5 text-yellow-500" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5 text-green-400" />
+                                )}
+                              </button>
                               <button
                                 onClick={() => handleEditStatus(st)}
                                 className="p-1 rounded hover:bg-green-500/20 transition-colors"

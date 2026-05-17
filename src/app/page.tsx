@@ -496,7 +496,7 @@ function FloatingScammers() {
                   style={{ width: '180px' }}
                 >
                   <div
-                    onClick={() => setSelectedScammer(scammer)}
+                    onClick={() => { setSelectedScammer(scammer); fetch(`/api/scammers/${scammer.id}/view`, { method: 'POST' }).catch(() => {}) }}
                     className={`cursor-pointer rounded-2xl backdrop-blur-md border p-4 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:scale-[1.02]`}
                     style={{ ...statusBgStyle(scammer.statusColor), boxShadow: scammer.statusColor ? `0 0 20px ${scammer.statusColor}08` : undefined }}
                   >
@@ -737,7 +737,7 @@ function SearchView() {
                   transition={{ delay: i * 0.05 }}
                 >
                   <div
-                    onClick={() => setSelectedScammer(scammer)}
+                    onClick={() => { setSelectedScammer(scammer); fetch(`/api/scammers/${scammer.id}/view`, { method: 'POST' }).catch(() => {}) }}
                     className="rounded-2xl border p-4 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                     style={statusBgStyle(scammer.statusColor)}
                   >
@@ -859,7 +859,7 @@ function Top10View() {
               transition={{ delay: i * 0.05 }}
             >
               <div
-                onClick={() => setSelectedScammer(item)}
+                onClick={() => { setSelectedScammer(item); fetch(`/api/scammers/${item.id}/view`, { method: 'POST' }).catch(() => {}) }}
                 className="rounded-2xl border p-4 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
                 style={statusBgStyle(item.statusColor)}
               >
