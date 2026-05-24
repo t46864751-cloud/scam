@@ -628,15 +628,18 @@ function SearchView() {
     if (!query.trim() && !telegramId.trim()) return
 
     // Easter egg: 67 in both fields
-    if (query.trim() === '67' && telegramId.trim() === '67') {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance('six seven')
-        u.rate = 0.8
-        window.speechSynthesis.speak(u)
-      }
+    if (String(query).trim() === '67' && String(telegramId).trim() === '67') {
+      console.log('Easter egg activated!')
       setSearched(true)
       setResults([])
       setSixSevenMode(true)
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const u = new SpeechSynthesisUtterance('six seven')
+          u.rate = 0.8
+          window.speechSynthesis.speak(u)
+        }
+      }, 300)
       return
     }
     setSixSevenMode(false)
