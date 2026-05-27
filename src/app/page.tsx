@@ -640,9 +640,10 @@ function SearchView() {
   const [searched, setSearched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sixSevenMode, setSixSevenMode] = useState(false)
-  // Tag search state
-  const [allTags, setAllTags] = useState<{ text: string; count: number; color: string; textColor: string }[]>([])
-  const [activeTag, setActiveTag] = useState<string | null>(null)
+  // Tag search state (status types: СКАМ, ПРОВЕРЕН, etc.)
+  const [allTags, setAllTags] = useState<{ key: string; text: string; count: number; color: string; textColor: string }[]>([])
+  const [activeTagKey, setActiveTagKey] = useState<string | null>(null)
+  const [activeTagText, setActiveTagText] = useState<string | null>(null)
   const [activeTagColor, setActiveTagColor] = useState('#3b82f6')
   const [tagSearchResults, setTagSearchResults] = useState<ScammerResult[] | null>(null)
   const [tagSearchTotal, setTagSearchTotal] = useState(0)
@@ -657,13 +658,14 @@ function SearchView() {
       .catch(() => {})
   }, [])
 
-  const handleTagSearch = useCallback(async (tag: string, page = 1) => {
-    setActiveTag(tag)
-    const tagObj = allTags.find(t => t.text === tag)
+  const handleTagSearch = useCallback(async (key: string, text: string, page = 1) => {
+    setActiveTagKey(key)
+    setActiveTagText(text)
+    const tagObj = allTags.find(t => t.key === key)
     if (tagObj) setActiveTagColor(tagObj.color)
     setTagSearchPage(page)
     try {
-      const res = await fetch(`/api/scammers/by-tag?tag=${encodeURIComponent(tag)}&page=${page}&limit=20`)
+      const res = await fetch(`/api/scammers/by-tag?tag=${encodeURIComponent(key)}&page=${page}&limit=20`)
       const data = await res.json()
       setTagSearchResults(data.results || [])
       setTagSearchTotal(data.total || 0)
@@ -674,7 +676,8 @@ function SearchView() {
   }, [allTags])
 
   const clearTagSearch = useCallback(() => {
-    setActiveTag(null)
+    setActiveTagKey(null)
+    setActiveTagText(null)
     setTagSearchResults(null)
     setTagSearchTotal(0)
     setTagSearchTotalPages(0)
@@ -796,23 +799,23 @@ function SearchView() {
       {/* Floating scammers when not searching */}
       {!searched && !tagSearchResults && <FloatingScammers />}
 
-      {/* Tag search bar */}
+      {/* Tag search bar — status types like СКАМ, ПРОВЕРЕН, etc. */}
       {!searched && (
         <div className="mt-4 px-2">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Поиск по тегам</p>
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Поиск по статусам</p>
           {allTags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {allTags.map((tag) => (
                 <button
-                  key={tag.text}
-                  onClick={() => handleTagSearch(tag.text)}
+                  key={tag.key}
+                  onClick={() => handleTagSearch(tag.key, tag.text)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
-                    activeTag === tag.text ? 'ring-2 ring-offset-1 ring-offset-background' : ''
+                    activeTagKey === tag.key ? 'ring-2 ring-offset-1 ring-offset-background' : ''
                   }`}
                   style={{
                     backgroundColor: tag.color,
                     color: tag.textColor,
-                    ringColor: activeTag === tag.text ? tag.color : undefined,
+                    ringColor: activeTagKey === tag.key ? tag.color : undefined,
                   }}
                 >
                   {tag.text} ({tag.count})
@@ -820,7 +823,7 @@ function SearchView() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground/50">Нет тегов</p>
+            <p className="text-xs text-muted-foreground/50">Нет статусов</p>
           )}
         </div>
       )}
@@ -830,7 +833,7 @@ function SearchView() {
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between px-1">
             <p className="text-xs text-muted-foreground font-medium">
-              Тег: <span style={{ color: activeTagColor }}>{activeTag}</span> — {tagSearchTotal} результатов
+              Статус: <span style={{ color: activeTagColor }}>{activeTagText}</span> — {tagSearchTotal} результатов
             </p>
             <button
               onClick={clearTagSearch}
@@ -880,7 +883,7 @@ function SearchView() {
                 variant="outline"
                 size="sm"
                 disabled={tagSearchPage <= 1}
-                onClick={() => handleTagSearch(activeTag!, tagSearchPage - 1)}
+                onClick={() => handleTagSearch(activeTagKey!, activeTagText!, tagSearchPage - 1)}
                 className="rounded-xl"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -892,7 +895,7 @@ function SearchView() {
                 variant="outline"
                 size="sm"
                 disabled={tagSearchPage >= tagSearchTotalPages}
-                onClick={() => handleTagSearch(activeTag!, tagSearchPage + 1)}
+                onClick={() => handleTagSearch(activeTagKey!, activeTagText!, tagSearchPage + 1)}
                 className="rounded-xl"
               >
                 <ChevronRight className="w-4 h-4" />

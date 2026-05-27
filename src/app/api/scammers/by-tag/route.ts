@@ -16,8 +16,8 @@ async function getStatusMap(): Promise<Record<string, { label: string; color: st
   }
 }
 
-// GET /api/scammers/by-tag?tag=<tag text>&page=1&limit=20
-// Returns all scammers whose createdBy user has a tag with matching text
+// GET /api/scammers/by-tag?tag=<status key>&page=1&limit=20
+// Returns all scammers with the given status key (e.g. "scam", "verified")
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -26,34 +26,10 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
 
     if (!tag) {
-      return NextResponse.json({ error: 'Укажите тег' }, { status: 400 })
+      return NextResponse.json({ error: 'Укажите статус' }, { status: 400 })
     }
 
-    // Find all users that have this tag (case-insensitive, not hidden)
-    const userTags = await db.userTag.findMany({
-      where: {
-        text: { equals: tag, mode: 'insensitive' },
-        hidden: false,
-      },
-      select: { userId: true },
-    })
-
-    const userIds = [...new Set(userTags.map((t) => t.userId))]
-
-    if (userIds.length === 0) {
-      return NextResponse.json({
-        results: [],
-        total: 0,
-        totalPages: 0,
-        page,
-        tag,
-      })
-    }
-
-    // Find scammers created by these users
-    const where = {
-      createdBy: { in: userIds },
-    }
+    const where = { status: tag }
 
     const [total, scammers] = await Promise.all([
       db.scammer.count({ where }),

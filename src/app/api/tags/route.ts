@@ -1,37 +1,31 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// GET /api/tags — returns all unique visible (non-hidden) tag texts with counts
+// GET /api/tags — returns all visible ScammerStatus types with scammer counts
 export async function GET() {
   try {
-    const tags = await db.userTag.groupBy({
-      by: ['text'],
-      where: { hidden: false },
+    // Get all non-hidden status types
+    const statuses = await db.$queryRawUnsafe(
+      `SELECT key, label, color, "textColor", "sortOrder" FROM "ScammerStatus" WHERE hidden = false ORDER BY "sortOrder"`
+    ) as any[]
+
+    // Count scammers per status
+    const statusCounts = await db.scammer.groupBy({
+      by: ['status'],
       _count: { id: true },
-      _min: { color: true },
-      _min: { textColor: true },
-      orderBy: { _count: { id: 'desc' } },
     })
 
-    // Get one representative color/textColor per tag
-    const tagDetails = await db.userTag.findMany({
-      where: { hidden: false },
-      select: { text: true, color: true, textColor: true },
-      distinct: ['text'],
-    })
-
-    const colorMap: Record<string, { color: string; textColor: string }> = {}
-    for (const t of tagDetails) {
-      if (!colorMap[t.text]) {
-        colorMap[t.text] = { color: t.color, textColor: t.textColor }
-      }
+    const countMap: Record<string, number> = {}
+    for (const sc of statusCounts) {
+      countMap[sc.status] = sc._count.id
     }
 
-    const result = tags.map((t) => ({
-      text: t.text,
-      count: t._count.id,
-      color: colorMap[t.text]?.color || '#3b82f6',
-      textColor: colorMap[t.text]?.textColor || '#ffffff',
+    const result = statuses.map((s) => ({
+      key: s.key,
+      text: s.label,
+      count: countMap[s.key] || 0,
+      color: s.color || '#6b7280',
+      textColor: s.textColor || '#ffffff',
     }))
 
     return NextResponse.json({ tags: result })
