@@ -2043,26 +2043,197 @@ function StatsView() {
         </div>
       </div>
 
-      {/* Digit-start stats */}
+      {/* Digit carousel */}
       {stats.digitStartCounts && (
         <div className="px-2">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Скамеры по первой цифре Telegram ID</p>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(stats.digitStartCounts as Record<string, number>).map(([digit, count], i) => (
-              <motion.div
-                key={digit}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: (i + 10) * 0.03 }}
-                className="glass rounded-xl p-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-              >
-                <p className="text-[11px] text-muted-foreground">У {count} скамеров первая цифра айди — {digit}</p>
-              </motion.div>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground mb-3 font-medium">Скамеры по первой цифре Telegram ID</p>
+          <DigitCarousel digitCounts={stats.digitStartCounts} />
         </div>
       )}
     </motion.div>
+  )
+}
+
+// ==================== DIGIT CAROUSEL ====================
+function DigitCarousel({ digitCounts }: { digitCounts: Record<string, number> }) {
+  const { setSelectedScammer } = useAppStore()
+  const [activeDigit, setActiveDigit] = useState(0)
+  const [scammers, setScammers] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    loadScammers(String(activeDigit))
+  }, [activeDigit])
+
+  const loadScammers = async (digit: string) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/scammers/by-digit?digit=${digit}&limit=8`)
+      const data = await res.json()
+      setScammers(data.results || [])
+    } catch {
+      setScammers([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const goNext = () => setActiveDigit((d) => (d + 1) % 10)
+  const goPrev = () => setActiveDigit((d) => (d + 9) % 10)
+
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.changedTouches[0].screenX }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX
+    const diff = touchStartX.current - touchEndX.current
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? goNext() : goPrev()
+    }
+  }
+
+  const digitColors = [
+    'from-blue-500 to-cyan-400',
+    'from-violet-500 to-purple-400',
+    'from-rose-500 to-pink-400',
+    'from-amber-500 to-yellow-400',
+    'from-emerald-500 to-green-400',
+    'from-red-500 to-orange-400',
+    'from-indigo-500 to-blue-400',
+    'from-teal-500 to-cyan-400',
+    'from-fuchsia-500 to-pink-400',
+    'from-orange-500 to-amber-400',
+  ]
+
+  const count = digitCounts[String(activeDigit)] || 0
+  const gradient = digitColors[activeDigit]
+
+  return (
+    <div className="glass rounded-2xl p-4 overflow-hidden">
+      {/* Digit selector */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={goPrev} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-1.5" ref={scrollRef}>
+          {Array.from({ length: 10 }, (_, i) => (
+            <motion.button
+              key={i}
+              onClick={() => setActiveDigit(i)}
+              whileTap={{ scale: 0.9 }}
+              className={`w-9 h-9 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center shrink-0 ${
+                activeDigit === i
+                  ? `bg-gradient-to-br ${gradient} text-white shadow-lg`
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+              style={activeDigit === i ? { boxShadow: `0 4px 20px ${['#3b82f6','#8b5cf6','#f43f5e','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#d946ef','#f97316'][i]}33` } : undefined}
+            >
+              {i}
+            </motion.button>
+          ))}
+        </div>
+        <button onClick={goNext} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Active digit header */}
+      <motion.div
+        key={activeDigit}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        transition={{ duration: 0.25 }}
+        className="mb-4 text-center"
+      >
+        <div className="flex items-center justify-center gap-2">
+          <span className={`text-3xl font-black bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+            {activeDigit}
+          </span>
+          <div className="text-left">
+            <p className="text-sm font-semibold">{count} скамер{count === 1 ? '' : count > 1 && count < 5 ? 'а' : 'ов'}</p>
+            <p className="text-[10px] text-muted-foreground">начинаются с {activeDigit}</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Scammer cards for this digit */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="space-y-2 max-h-[300px] overflow-y-auto pr-1"
+        style={{ scrollbarWidth: 'thin' }}
+      >
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-500/50" />
+          </div>
+        ) : scammers.length > 0 ? (
+          <AnimatePresence mode="popLayout">
+            {scammers.map((scammer, i) => (
+              <motion.div
+                key={scammer.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: i * 0.04, duration: 0.2 }}
+              >
+                <div
+                  onClick={() => { setSelectedScammer(scammer); recordView(scammer.id) }}
+                  className="rounded-xl border p-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300"
+                  style={{
+                    backgroundColor: scammer.statusColor ? scammer.statusColor + '0a' : undefined,
+                    borderColor: scammer.statusColor ? scammer.statusColor + '22' : undefined,
+                  }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-bold text-xs">
+                        {scammer.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{scammer.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">ID: {scammer.telegramUserId}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {scammer.scamAmount && (
+                        <span className="text-[10px] font-semibold text-orange-400">{scammer.scamAmount} {scammer.scamCurrency}</span>
+                      )}
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                        style={{ backgroundColor: scammer.statusColor + '22', color: scammer.statusTextColor }}
+                      >
+                        {scammer.statusLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">Нет скамеров с ID на {activeDigit}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex items-center justify-center gap-1 mt-3">
+        {Array.from({ length: 10 }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveDigit(i)}
+            className={`rounded-full transition-all duration-300 ${
+              activeDigit === i ? 'w-5 h-1.5' : 'w-1.5 h-1.5 bg-muted-foreground/30'
+            }`}
+            style={activeDigit === i ? { backgroundColor: ['#3b82f6','#8b5cf6','#f43f5e','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#d946ef','#f97316'][i] } : undefined}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
 
