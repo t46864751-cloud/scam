@@ -1090,6 +1090,21 @@ export default function PanelPage() {
     } catch { toast.error('Ошибка') }
   }
 
+  const handleMakeAdmin = async (userId: string, username: string) => {
+    if (!confirm(`Сделать ${username} админом?`)) return
+    try {
+      const res = await fetch('/api/panel/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, action: 'makeAdmin' }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success(data.message)
+      loadUsers(usersPage, usersSearch, usersRoleFilter)
+    } catch { toast.error('Ошибка') }
+  }
+
   const loadUserTags = async (userId: string) => {
     try {
       const res = await fetch(`/api/panel/users/${userId}/tags`)
@@ -1820,6 +1835,15 @@ export default function PanelPage() {
                                           Забанить
                                         </Button>
                                       )}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleMakeAdmin(u.id, u.username)}
+                                        className="h-8 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 font-mono text-[10px] rounded-lg"
+                                      >
+                                        <Shield className="w-3 h-3 mr-1" />
+                                        Сделать админом
+                                      </Button>
                                       <Button
                                         size="sm"
                                         variant="outline"
