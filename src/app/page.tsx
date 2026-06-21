@@ -1254,6 +1254,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
                   placeholder="Цифровой ID в Telegram..."
                   value={telegramUserId}
                   onChange={(e) => setTelegramUserId(e.target.value.replace(/[^\d]/g, ''))}
+                  inputMode="numeric" pattern="[0-9]*"
                   className="h-12 rounded-xl bg-secondary border-border"
                 />
               </div>
@@ -2057,15 +2058,24 @@ function StatsView() {
 // ==================== DIGIT CAROUSEL ====================
 function DigitCarousel({ digitCounts }: { digitCounts: Record<string, number> }) {
   const { setSelectedScammer } = useAppStore()
-  const [activeDigit, setActiveDigit] = useState(0)
+  // Only show digits that have scammers
+  const availableDigits = Array.from({ length: 10 }, (_, i) => i).filter(d => (digitCounts[String(d)] || 0) > 0)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeDigit = availableDigits[activeIndex] ?? 0
   const [scammers, setScammers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const touchStartX = useRef(0)
-  const touchEndX = useRef(0)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadScammers(String(activeDigit))
+    if (availableDigits.length > 0) {
+      setActiveIndex(0)
+    }
+  }, [digitCounts])
+
+  useEffect(() => {
+    if (availableDigits.length > 0) {
+      loadScammers(String(activeDigit))
+    }
   }, [activeDigit])
 
   const loadScammers = async (digit: string) => {
@@ -2081,60 +2091,56 @@ function DigitCarousel({ digitCounts }: { digitCounts: Record<string, number> })
     }
   }
 
-  const goNext = () => setActiveDigit((d) => (d + 1) % 10)
-  const goPrev = () => setActiveDigit((d) => (d + 9) % 10)
+  const goNext = () => setActiveIndex((i) => (i + 1) % availableDigits.length)
+  const goPrev = () => setActiveIndex((i) => (i + availableDigits.length - 1) % availableDigits.length)
 
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.changedTouches[0].screenX }
   const handleTouchEnd = (e: React.TouchEvent) => {
-    touchEndX.current = e.changedTouches[0].screenX
-    const diff = touchStartX.current - touchEndX.current
+    const diff = touchStartX.current - e.changedTouches[0].screenX
     if (Math.abs(diff) > 50) {
       diff > 0 ? goNext() : goPrev()
     }
   }
 
-  const digitColors = [
-    'from-blue-500 to-cyan-400',
-    'from-violet-500 to-purple-400',
-    'from-rose-500 to-pink-400',
-    'from-amber-500 to-yellow-400',
-    'from-emerald-500 to-green-400',
-    'from-red-500 to-orange-400',
-    'from-indigo-500 to-blue-400',
-    'from-teal-500 to-cyan-400',
-    'from-fuchsia-500 to-pink-400',
-    'from-orange-500 to-amber-400',
+  const digitHexColors = ['#3b82f6','#8b5cf6','#f43f5e','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#d946ef','#f97316']
+  const digitGradients = [
+    'from-blue-500 to-cyan-400','from-violet-500 to-purple-400','from-rose-500 to-pink-400',
+    'from-amber-500 to-yellow-400','from-emerald-500 to-green-400','from-red-500 to-orange-400',
+    'from-indigo-500 to-blue-400','from-teal-500 to-cyan-400','from-fuchsia-500 to-pink-400','from-orange-500 to-amber-400',
   ]
 
+  if (availableDigits.length === 0) return null
+
   const count = digitCounts[String(activeDigit)] || 0
-  const gradient = digitColors[activeDigit]
+  const gradient = digitGradients[activeDigit]
+  const hexColor = digitHexColors[activeDigit]
 
   return (
-    <div className="glass rounded-2xl p-4 overflow-hidden">
+    <div className="glass rounded-2xl p-3 sm:p-4">
       {/* Digit selector */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={goPrev} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
-          <ChevronLeft className="w-4 h-4" />
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={goPrev} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
+          <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
-        <div className="flex items-center gap-1.5" ref={scrollRef}>
-          {Array.from({ length: 10 }, (_, i) => (
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          {availableDigits.map((d, idx) => (
             <motion.button
-              key={i}
-              onClick={() => setActiveDigit(i)}
+              key={d}
+              onClick={() => setActiveIndex(idx)}
               whileTap={{ scale: 0.9 }}
-              className={`w-9 h-9 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center shrink-0 ${
-                activeDigit === i
-                  ? `bg-gradient-to-br ${gradient} text-white shadow-lg`
+              className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center shrink-0 ${
+                activeDigit === d
+                  ? `bg-gradient-to-br ${digitGradients[d]} text-white shadow-lg`
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
               }`}
-              style={activeDigit === i ? { boxShadow: `0 4px 20px ${['#3b82f6','#8b5cf6','#f43f5e','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#d946ef','#f97316'][i]}33` } : undefined}
+              style={activeDigit === d ? { boxShadow: `0 4px 20px ${digitHexColors[d]}33` } : undefined}
             >
-              {i}
+              {d}
             </motion.button>
           ))}
         </div>
-        <button onClick={goNext} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
-          <ChevronRight className="w-4 h-4" />
+        <button onClick={goNext} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors shrink-0">
+          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
       </div>
 
@@ -2143,26 +2149,25 @@ function DigitCarousel({ digitCounts }: { digitCounts: Record<string, number> })
         key={activeDigit}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.25 }}
-        className="mb-4 text-center"
+        className="mb-3 text-center"
       >
         <div className="flex items-center justify-center gap-2">
-          <span className={`text-3xl font-black bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+          <span className={`text-2xl sm:text-3xl font-black bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
             {activeDigit}
           </span>
           <div className="text-left">
-            <p className="text-sm font-semibold">{count} скамер{count === 1 ? '' : count > 1 && count < 5 ? 'а' : 'ов'}</p>
+            <p className="text-xs sm:text-sm font-semibold">{count} скамер{count === 1 ? '' : count > 1 && count < 5 ? 'а' : 'ов'}</p>
             <p className="text-[10px] text-muted-foreground">начинаются с {activeDigit}</p>
           </div>
         </div>
       </motion.div>
 
-      {/* Scammer cards for this digit */}
+      {/* Scammer cards */}
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="space-y-2 max-h-[300px] overflow-y-auto pr-1"
+        className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-1"
         style={{ scrollbarWidth: 'thin' }}
       >
         {loading ? (
@@ -2222,14 +2227,14 @@ function DigitCarousel({ digitCounts }: { digitCounts: Record<string, number> })
 
       {/* Progress dots */}
       <div className="flex items-center justify-center gap-1 mt-3">
-        {Array.from({ length: 10 }, (_, i) => (
+        {availableDigits.map((d, idx) => (
           <button
-            key={i}
-            onClick={() => setActiveDigit(i)}
+            key={d}
+            onClick={() => setActiveIndex(idx)}
             className={`rounded-full transition-all duration-300 ${
-              activeDigit === i ? 'w-5 h-1.5' : 'w-1.5 h-1.5 bg-muted-foreground/30'
+              activeIndex === idx ? 'w-5 h-1.5' : 'w-1.5 h-1.5 bg-muted-foreground/30'
             }`}
-            style={activeDigit === i ? { backgroundColor: ['#3b82f6','#8b5cf6','#f43f5e','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6','#d946ef','#f97316'][i] } : undefined}
+            style={activeIndex === idx ? { backgroundColor: digitHexColors[d] } : undefined}
           />
         ))}
       </div>

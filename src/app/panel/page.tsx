@@ -2293,7 +2293,7 @@ export default function PanelPage() {
                     </div>
                     <div>
                       <label className="text-xs font-mono text-green-600 mb-1.5 block">Telegram User ID</label>
-                      <Input placeholder="8393190771" value={newTelegramUserId} onChange={(e) => setNewTelegramUserId(e.target.value)}
+                      <Input placeholder="8393190771" value={newTelegramUserId} onChange={(e) => setNewTelegramUserId(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" pattern="[0-9]*"
                         className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono focus:border-green-500/40" />
                     </div>
 
@@ -2715,7 +2715,7 @@ export default function PanelPage() {
                 </div>
                 <div>
                   <label className="text-xs font-mono text-green-600 mb-1 block">Telegram User ID</label>
-                  <Input placeholder="8393190771" value={editTelegramUserId} onChange={(e) => setEditTelegramUserId(e.target.value)}
+                  <Input placeholder="8393190771" value={editTelegramUserId} onChange={(e) => setEditTelegramUserId(e.target.value.replace(/[^\d]/g, ''))} inputMode="numeric" pattern="[0-9]*"
                     className="h-10 rounded-lg bg-green-500/5 border-green-500/20 text-green-300 font-mono focus:border-green-500/40" />
                 </div>
 
