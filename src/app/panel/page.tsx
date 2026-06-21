@@ -825,6 +825,75 @@ export default function PanelPage() {
       return
     }
 
+    // Check for duplicates before adding
+    if (newName.trim() || newTelegramUserId.trim()) {
+      try {
+        const checkParams = new URLSearchParams()
+        checkParams.set('page', '1')
+        checkParams.set('limit', '5')
+        if (newName.trim()) checkParams.set('search', newName.trim())
+        if (newTelegramUserId.trim()) checkParams.set('telegramId', newTelegramUserId.trim())
+
+        const checkRes = await fetch(`/api/panel/scammers?${checkParams.toString()}`)
+        const checkData = await checkRes.json()
+        const found = checkData.results || []
+
+        if (found.length > 0) {
+          // Check if any match by name, telegramUserId, or description
+          const nameMatch = newName.trim() ? found.find((s: any) => s.name?.toLowerCase() === newName.trim().toLowerCase()) : null
+          const idMatch = newTelegramUserId.trim() ? found.find((s: any) => s.telegramUserId === newTelegramUserId.trim()) : null
+          const descMatch = newDesc.trim() ? found.find((s: any) => s.description?.toLowerCase().includes(newDesc.trim().toLowerCase())) : null
+
+          const match = nameMatch || idMatch || descMatch
+          if (match) {
+            const matchType = nameMatch ? 'имени' : idMatch ? 'Telegram ID' : 'описанию'
+            const confirmed = await new Promise<boolean>((resolve) => {
+              toast(
+                <div className="space-y-2">
+                  <p className="font-semibold text-sm">Найден похожий скамер по {matchType}:</p>
+                  <p className="text-sm text-muted-foreground">{match.name} {match.telegramUserId ? `(ID: ${match.telegramUserId})` : ''}</p>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => { resolve(false) }}
+                      className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs font-medium hover:bg-blue-500/30 transition-colors"
+                    >
+                      Открыть для редактирования
+                    </button>
+                    <button
+                      onClick={() => { resolve(true) }}
+                      className="px-3 py-1.5 rounded-lg bg-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/30 transition-colors"
+                    >
+                      Всё равно добавить
+                    </button>
+                  </div>
+                </div>,
+                { duration: 15000, closeButton: false, onAutoClose: () => resolve(false) }
+              )
+            })
+
+            if (!confirmed) {
+              // Open the matched scammer for editing
+              setEditScammer(match)
+              setEditName(match.name || '')
+              setEditDesc(match.description || '')
+              setEditStatus(match.status || 'scam')
+              setEditSearchCount(match.searchCount || 0)
+              setEditScammerType(match.scammerType || '')
+              setEditScamDate(match.scamDate || '')
+              setEditScamAmount(match.scamAmount || '')
+              setEditScamCurrency(match.scamCurrency || '')
+              setEditCustomCurrency(match.scamCurrency && !['рубли','ton','stars','prgram','gram',''].includes(match.scamCurrency) ? match.scamCurrency : '')
+              setEditProofLink(match.proofLink || '')
+              setEditTelegramUserId(match.telegramUserId || '')
+              return
+            }
+          }
+        }
+      } catch {
+        // If check fails, proceed with adding
+      }
+    }
+
     setSubmitting(true)
     try {
       const res = await fetch('/api/panel/scammers', {
