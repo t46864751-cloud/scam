@@ -173,3 +173,12 @@ model Complaint {
   status    String   @default("pending") // "pending", "resolved", "dismissed"
   createdAt DateTime @default(now())
 }
+
+model ExpRule {
+  id         String   @id @default(cuid())
+  actionType String   // "submission", "comment", "search"
+  status     String   @default("approved") // "approved", "rejected", "all"
+  threshold  Int      // every N actions
+  expReward  Int      // how much EXP to give
+  createdAt  DateTime @default(now())
+}
