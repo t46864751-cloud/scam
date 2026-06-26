@@ -2361,6 +2361,8 @@ function ProfileView({ user }: { user: any }) {
   const [avatarUrl, setAvatarUrl] = useState((user as any)?.image || '')
   const [avatarSaving, setAvatarSaving] = useState(false)
   const [showAvatarEdit, setShowAvatarEdit] = useState(false)
+  const [userExp, setUserExp] = useState(0)
+  const [expLoading, setExpLoading] = useState(true)
   const drunkMode = useAppStore((s) => s.drunkMode)
   const setDrunkMode = useAppStore((s) => s.setDrunkMode)
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -2412,6 +2414,16 @@ function ProfileView({ user }: { user: any }) {
       }
     }
     load()
+  }, [user])
+
+  // Load user EXP
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/profile')
+      .then(r => r.json())
+      .then(d => { if (d.exp !== undefined) setUserExp(d.exp) })
+      .catch(() => {})
+      .finally(() => setExpLoading(false))
   }, [user])
 
   const handleResubmit = async (sub: Submission) => {
@@ -2547,6 +2559,16 @@ function ProfileView({ user }: { user: any }) {
               {(user as any).role === 'admin' ? 'Админ' : 'Пользователь'}
             </Badge>
             <UserTagsBadge userId={(user as any)?.userId || (user as any)?.id || ''} size="md" className="mt-1" />
+            {/* EXP */}
+            <div className="mt-3 flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/15 to-blue-500/15 border border-purple-500/20">
+                <span className="text-base">⚡</span>
+                <span className="text-sm font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  {expLoading ? '...' : userExp.toLocaleString('ru-RU')}
+                </span>
+                <span className="text-[10px] font-semibold text-purple-400/70 uppercase tracking-wider">EXP</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

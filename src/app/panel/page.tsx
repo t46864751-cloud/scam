@@ -1800,6 +1800,7 @@ export default function PanelPage() {
                                     <span>{u.submissionsCount} заявок</span>
                                     <span>{u.commentsCount} комм.</span>
                                     <span>{u.searchesCount} поисков</span>
+                                    <span className="text-purple-400">⚡ {u.exp || 0} EXP</span>
                                   </div>
                                   {u.role === 'banned' && u.banReason && (
                                     <p className="text-[10px] text-red-400/80 font-mono mt-0.5">Причина: {u.banReason}</p>
