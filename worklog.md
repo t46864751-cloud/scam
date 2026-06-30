@@ -73,7 +73,31 @@ Analysis (найденные баги):
 - Нужно переделать на .then() для получения id.
 
 Work Log:
-- (в процессе)
+- Добавлена модель ExpGrant в schema.prisma (unique [ruleId, sourceId]) + relation в User и ExpRule
+- Создан helper src/lib/exp.ts с функцией grantExpForAction(userId, actionType, status, sourceId):
+  * ищет подходящие ExpRule (точное совпадение по status ИЛИ rule.status='all')
+  * для search — только status='all'
+  * проверяет ExpGrant на дубль (ruleId+sourceId)
+  * считает количество действий юзера этого типа с подходящим статусом
+  * если count >= threshold и count % threshold === 0 — создаёт ExpGrant и increment exp
+  * все ошибки ловит и логирует, возвращает 0
+- /api/panel/submissions PUT: сохраняет previousStatus, вызывает grantExpForAction при смене статуса на approved/rejected (только если статус реально изменился и автор — не гость)
+- /api/panel/comments PUT action='approve': проверяет существующий approved, вызывает grantExpForAction только при первом одобрении
+- /api/search GET: переделал fire-and-forget на .then() с получением searchLog.id, вызывает grantExpForAction для залогиненных
+- /api/panel/users/exp: Number(amount) + Number.isInteger валидация, атомарный increment (убрал race condition), проверка banned, clamp в 0 при уходе в минус
+- /api/top-exp: where role notIn ['banned','admin'], take 10 (было 5)
+- /api/panel/exp-rules POST: Number.isInteger для threshold/expReward, запрет combo search + approved/rejected
+- src/app/panel/page.tsx: сброс формы (expUserId/expAmount/expUserSearch/expUserResults) после успешного EXP change, Number.isInteger проверка на фронте, автопереключение status='all' при выборе action='search', disabled селект статуса для search
+- src/app/page.tsx ProfileView: setExpLoading(true) перед рефетчем (key="profile" перемонтирует компонент при переключении таба → EXP рефетчится)
+- prisma generate --no-engine — OK
+- next build — OK, без ошибок и предупреждений
+- git commit + push в main — успешно (5f705cc)
 
 Stage Summary:
-- (в процессе)
+- Главный фикс: реализовано автоматическое начисление EXP по правилам (раньше правила были мертвы — создавались, но нигде не применялись)
+- Добавлена защита от двойного начисления через ExpGrant с уникальным индексом [ruleId, sourceId]
+- Закрыты race condition в ручном начислении через atomic increment
+- Топ EXP теперь исключает админов и показывает 10 вместо 5
+- UI админки сбрасывает форму и валидирует ввод
+- Vercel автодеплойнет при пуше в main (postinstall сам сделает prisma generate && prisma db push — миграция ExpGrant применится автоматически)
+
