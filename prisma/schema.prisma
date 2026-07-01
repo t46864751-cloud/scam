@@ -175,6 +175,14 @@ model Complaint {
   createdAt DateTime @default(now())
 }
 
+model BannedIp {
+  id        String   @id @default(cuid())
+  ip        String   @unique // IP-адрес (нормализованный, без портов)
+  reason    String   @default("") // Причина бана (опционально)
+  bannedBy  String   @default("") // ID админа, который забанил
+  createdAt DateTime @default(now())
+}
+
 model ExpRule {
   id         String   @id @default(cuid())
   actionType String   // "submission", "comment", "search"

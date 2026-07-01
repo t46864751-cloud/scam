@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getClientIp, isIpBanned } from '@/lib/ban-check'
 
 const VALID_TYPES = ['like', 'neutral', 'dislike'] as const
 
 function getVoterId(req: NextRequest, userId?: string): string {
   if (userId) return `user:${userId}`
-  const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || 'unknown'
-  return `ip:${ip}`
+  return `ip:${getClientIp(req)}`
 }
 
 async function getUserId(): Promise<string | undefined> {
@@ -45,6 +44,11 @@ export async function POST(req: NextRequest) {
     }
 
     const voterId = getVoterId(req, userId)
+
+    // Проверка бана по IP — заблокированный IP не может голосовать
+    if (await isIpBanned(getClientIp(req))) {
+      return NextResponse.json({ error: 'Ваш IP заблокирован' }, { status: 403 })
+    }
 
     // Проверка banned — забаненный не может голосовать
     if (userId) {
