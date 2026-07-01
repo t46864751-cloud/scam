@@ -139,3 +139,28 @@ Stage Summary:
 - На всех карточках скамеров в правом нижнем углу виден чистый рейтинг лайков-дизлайков
 - В топе EXP у каждого юзера показывается уровень рядом с EXP
 - В админке уровень виден рядом с EXP в списке юзеров и в поиске
+
+---
+Task ID: 4
+Agent: Main
+Task: Фикс 8 критичных багов (из аудита)
+
+Work Log:
+- #1 Бан не инвалидирует сессию (src/lib/auth.ts): в jwt callback добавлено периодическое перечитывание role из БД каждые 60 сек (через token.lastRefresh). При удалении юзера — token.role = 'banned'. Теперь забаненный админ теряет доступ максимум через 60 сек, а не 30 дней.
+- #2 Accept appeal крашит (api/panel/appeals/route.ts): scammer.delete падал на FK от Comment/Vote (required, без onDelete). Обернул в db.$transaction с предварительным deleteMany для comments/votes/searchLogs/scammerNameHistory/appeals + updateMany для submissions (scammerId: null). Сохраняю scammerName до транзакции для ответа.
+- #3 Vote race + count в минус (api/vote/route.ts): обернул всю логику в db.$transaction(async tx). Decrement через $executeRaw с GREATEST(field - 1, 0) — count не уходит в минус. Бонус: добавлена проверка banned юзера.
+- #4 u.exp.toLocaleString крашит Top10 (page.tsx:1304): заменено на (u.exp || 0).toLocaleString('ru-RU'). Если API вернёт юзера без exp — больше не белый экран.
+- #5 comment.user null крашит модалку (page.tsx:2096): добавлен guard commentUser = comment.user || { id: '', username: '[удалён]', image: '' }. isOwner проверяет commentUser.id !== ''. UserTagsBadge рендерится только если есть id.
+- #6 Hidden tags утекают (api/users/[id]/tags/route.ts): добавлен hidden: false в where. Скрытые админом теги больше не видны публично.
+- #7 EXP нет транзакции + race (src/lib/exp.ts): переписан grantExpForAction. Теперь db.$transaction(async tx) с SELECT ... FOR UPDATE на User (сериализация параллельных вызовов для одного юзера). Вместо count % threshold === 0 используется grantsCount < floor(actionCount / threshold) — закрывает race при concurrent действиях. expGrant.create + user.update в одной транзакции — при падении update грант откатывается.
+- #8 PingPong умирает после победы (panel/page.tsx:197-214): return в loop() обрывал rAF-цепочку до requestAnimationFrame(loop). Заменён на if/else: при победе gameState='idle' без return, resetBall вызывается только в else. Теперь loop продолжается, оверлей «ВЫ ПОБЕДИЛИ!» рисуется каждый кадр.
+- prisma generate --no-engine — OK
+- next build — OK, без ошибок и предупреждений
+- git commit + push
+
+Stage Summary:
+- 8 багов из топа аудита пофикшены
+- Безопасность: бан теперь инвалидирует доступ за 60 сек (было 30 дней); hidden tags не утекают
+- Целостность данных: vote атомарен + count не уходит в минус; EXP начисляется в транзакции без race; accept appeal не крашит
+- UI краши: Top10-exp не падает на undefined exp; модалка скамера не падает на удалённом авторе комментария
+- Нерабочие фичи: accept appeal теперь работает; PingPong перезапускается после победы

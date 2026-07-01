@@ -1301,7 +1301,7 @@ function Top10View() {
                       }}>
                         <span className="text-sm">⚡</span>
                         <span className="text-sm font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                          {u.exp.toLocaleString('ru-RU')}
+                          {(u.exp || 0).toLocaleString('ru-RU')}
                         </span>
                       </span>
                     </div>
@@ -2094,20 +2094,25 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                 <>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {comments.map((comment) => {
-                    const isOwner = comment.user.id === currentUserId
+                    // comment.user может быть null, если автор удалён (Comment.userId required,
+                    // но при ручном удалении юзера через админку с каскадом комментарии удаляются;
+                    // однако при баге или импорте из старой БД могут остаться orphan-комментарии).
+                    // Guard от TypeError — иначе весь список падает.
+                    const commentUser = comment.user || { id: '', username: '[удалён]', image: '' }
+                    const isOwner = commentUser.id === currentUserId && commentUser.id !== ''
                     const isAdmin = sessionUser?.role === 'admin'
                     return (
                       <div key={comment.id} className="glass rounded-xl p-3">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-6 w-6 shrink-0">
-                              {comment.user.image && <AvatarImage src={comment.user.image} alt={comment.user.username} />}
+                              {commentUser.image && <AvatarImage src={commentUser.image} alt={commentUser.username} />}
                               <AvatarFallback className="bg-blue-500/20 dark:bg-blue-500/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold">
-                                {comment.user.username.charAt(0).toUpperCase()}
+                                {commentUser.username.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-xs font-medium truncate">{comment.user.username}</span>
-                            <UserTagsBadge userId={comment.user.id} size="sm" />
+                            <span className="text-xs font-medium truncate">{commentUser.username}</span>
+                            {commentUser.id && <UserTagsBadge userId={commentUser.id} size="sm" />}
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <span className="text-[10px] text-muted-foreground">

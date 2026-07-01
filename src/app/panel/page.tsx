@@ -197,14 +197,20 @@ function PingPongGame() {
         if (ball.x < -10) {
           g.score.bot++; setScore({ ...g.score })
           for (let i = 0; i < 10; i++) g.particles.push({ x: 20, y: ball.y, vx: Math.random() * 5, vy: (Math.random() - 0.5) * 6, life: 1, color: '#ef4444' })
-          if (g.score.bot >= 10) { gameStateRef.current = 'idle'; setGameState('idle'); return }
-          resetBall(1)
+          if (g.score.bot >= 10) {
+            gameStateRef.current = 'idle'; setGameState('idle')
+          } else {
+            resetBall(1)
+          }
         }
         if (ball.x > W + 10) {
           g.score.player++; setScore({ ...g.score })
           for (let i = 0; i < 10; i++) g.particles.push({ x: W - 20, y: ball.y, vx: -Math.random() * 5, vy: (Math.random() - 0.5) * 6, life: 1, color: '#4ade80' })
-          if (g.score.player >= 10) { gameStateRef.current = 'idle'; setGameState('idle'); return }
-          resetBall(-1)
+          if (g.score.player >= 10) {
+            gameStateRef.current = 'idle'; setGameState('idle')
+          } else {
+            resetBall(-1)
+          }
         }
 
         g.particles = g.particles.filter(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; p.vy += 0.1; return p.life > 0 })
