@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { signOut } from 'next-auth/react'
 import NameHistoryModal from '@/components/NameHistoryModal'
 import { calcLevel } from '@/lib/levels'
+import { Pagination } from '@/components/pagination'
 
 interface Scammer {
   id: string
@@ -1780,26 +1781,13 @@ export default function PanelPage() {
 
                     {/* Pagination */}
                     {scammerTotalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-6">
-                        <button
-                          onClick={() => setScammerPage(p => Math.max(1, p - 1))}
-                          disabled={scammerPage <= 1}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg font-mono text-sm border border-green-500/20 text-green-400 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          Назад
-                        </button>
-                        <span className="font-mono text-sm text-green-500 px-3">
-                          {scammerPage} / {scammerTotalPages}
-                        </span>
-                        <button
-                          onClick={() => setScammerPage(p => Math.min(scammerTotalPages, p + 1))}
-                          disabled={scammerPage >= scammerTotalPages}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg font-mono text-sm border border-green-500/20 text-green-400 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Вперёд
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
+                      <div className="mt-6">
+                        <Pagination
+                          current={scammerPage}
+                          total={scammerTotalPages}
+                          onPageChange={setScammerPage}
+                          variant="terminal"
+                        />
                       </div>
                     )}
                     </>
@@ -1961,24 +1949,13 @@ export default function PanelPage() {
 
                       {/* Pagination */}
                       {usersTotalPages > 1 && (
-                        <div className="flex items-center justify-center gap-3 mt-6">
-                          <button
-                            onClick={() => { setUsersPage(p => Math.max(1, p - 1)); loadUsers(Math.max(1, usersPage - 1), usersSearch, usersRoleFilter) }}
-                            disabled={usersPage <= 1}
-                            className="p-2 rounded-lg hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronLeft className="w-4 h-4 text-green-400" />
-                          </button>
-                          <span className="text-sm text-green-400 font-mono">
-                            {usersPage} / {usersTotalPages}
-                          </span>
-                          <button
-                            onClick={() => { setUsersPage(p => Math.min(usersTotalPages, p + 1)); loadUsers(Math.min(usersTotalPages, usersPage + 1), usersSearch, usersRoleFilter) }}
-                            disabled={usersPage >= usersTotalPages}
-                            className="p-2 rounded-lg hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronRight className="w-4 h-4 text-green-400" />
-                          </button>
+                        <div className="mt-6">
+                          <Pagination
+                            current={usersPage}
+                            total={usersTotalPages}
+                            onPageChange={(p) => { setUsersPage(p); loadUsers(p, usersSearch, usersRoleFilter) }}
+                            variant="terminal"
+                          />
                         </div>
                       )}
                     </>
@@ -2363,22 +2340,13 @@ export default function PanelPage() {
 
                     {/* Pagination */}
                     {appealsTotalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 mt-6">
-                        <button
-                          onClick={() => setAppealsPage(p => Math.max(1, p - 1))}
-                          disabled={appealsPage <= 1}
-                          className="p-2 rounded-lg glass border border-green-500/10 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4 text-green-400" />
-                        </button>
-                        <span className="text-sm text-green-600 font-mono">{appealsPage} / {appealsTotalPages}</span>
-                        <button
-                          onClick={() => setAppealsPage(p => Math.min(appealsTotalPages, p + 1))}
-                          disabled={appealsPage >= appealsTotalPages}
-                          className="p-2 rounded-lg glass border border-green-500/10 hover:bg-green-500/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronRight className="w-4 h-4 text-green-400" />
-                        </button>
+                      <div className="mt-6">
+                        <Pagination
+                          current={appealsPage}
+                          total={appealsTotalPages}
+                          onPageChange={(p) => { setAppealsPage(p); if (p === 1) loadAppeals(1, appealsStatusFilter) }}
+                          variant="terminal"
+                        />
                       </div>
                     )}
                     </>
@@ -3458,24 +3426,12 @@ export default function PanelPage() {
 
               {/* Pagination */}
               {!hiddenTagsLoading && hiddenTagsTotal > 20 && (
-                <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-yellow-500/10">
-                  <button
-                    onClick={() => loadHiddenTags(hiddenTagsPage - 1, hiddenTagsSearch)}
-                    disabled={hiddenTagsPage <= 1}
-                    className="p-1.5 rounded hover:bg-yellow-500/10 disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {hiddenTagsPage} / {Math.ceil(hiddenTagsTotal / 20)}
-                  </span>
-                  <button
-                    onClick={() => loadHiddenTags(hiddenTagsPage + 1, hiddenTagsSearch)}
-                    disabled={hiddenTagsPage >= Math.ceil(hiddenTagsTotal / 20)}
-                    className="p-1.5 rounded hover:bg-yellow-500/10 disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                <div className="mt-4 pt-3 border-t border-yellow-500/10">
+                  <Pagination
+                    current={hiddenTagsPage}
+                    total={Math.ceil(hiddenTagsTotal / 20)}
+                    onPageChange={(p) => loadHiddenTags(p, hiddenTagsSearch)}
+                  />
                 </div>
               )}
             </motion.div>

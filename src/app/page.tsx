@@ -48,6 +48,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import UserNameHistoryModal from '@/components/UserNameHistoryModal'
 import UserTagsBadge from '@/components/UserTagsBadge'
 import { calcLevel } from '@/lib/levels'
+import { Pagination } from '@/components/pagination'
 
 // ==================== VIEW DEDUP ====================
 const recentlyViewed = new Map<string, number>()
@@ -1064,45 +1065,12 @@ function SearchView() {
 
           {/* Tag pagination */}
           {tagSearchTotalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <motion.button
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={tagSearchPage <= 1}
-                onClick={() => fetchTagResults(selectedTags, tagSearchPage - 1)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border border-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-foreground"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </motion.button>
-              <div className="flex items-center gap-1.5 flex-wrap justify-center max-w-[280px]">
-                {Array.from({ length: tagSearchTotalPages }, (_, idx) => idx + 1).map(p => (
-                  <motion.button
-                    key={p}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => fetchTagResults(selectedTags, p)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all"
-                    style={p === tagSearchPage ? {
-                      backgroundColor: 'var(--primary)',
-                      color: '#fff',
-                      boxShadow: `0 2px 10px var(--primary)55`,
-                    } : {
-                      color: 'var(--muted-foreground)',
-                    }}
-                  >
-                    {p}
-                  </motion.button>
-                ))}
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.95 }}
-                disabled={tagSearchPage >= tagSearchTotalPages}
-                onClick={() => fetchTagResults(selectedTags, tagSearchPage + 1)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center border border-border disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-foreground"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
+            <div className="pt-2">
+              <Pagination
+                current={tagSearchPage}
+                total={tagSearchTotalPages}
+                onPageChange={(p) => fetchTagResults(selectedTags, p)}
+              />
             </div>
           )}
         </motion.div>
@@ -2216,22 +2184,12 @@ function ScamerDetailModal({ scammer, onClose }: { scammer: any; onClose: () => 
                   })}
                 </div>
                 {commentTotalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    <button
-                      onClick={() => setCommentPage(p => Math.max(1, p - 1))}
-                      disabled={commentPage <= 1}
-                      className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs text-muted-foreground">{commentPage} / {commentTotalPages}</span>
-                    <button
-                      onClick={() => setCommentPage(p => Math.min(commentTotalPages, p + 1))}
-                      disabled={commentPage >= commentTotalPages}
-                      className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                  <div className="mt-3">
+                    <Pagination
+                      current={commentPage}
+                      total={commentTotalPages}
+                      onPageChange={setCommentPage}
+                    />
                   </div>
                 )}
                 </>
