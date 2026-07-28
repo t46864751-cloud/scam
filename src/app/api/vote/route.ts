@@ -30,6 +30,11 @@ function getCountField(voteType: string) {
   }
 }
 
+// Белый список допустимых имён колонок счётчиков.
+// Используется для $executeRawUnsafe — идентификаторы колонок нельзя
+// передавать как параметры, поэтому интерполируем с проверкой.
+const VALID_COUNT_FIELDS = new Set(['likeCount', 'neutralCount', 'dislikeCount'])
+
 // POST: vote like/neutral/dislike
 export async function POST(req: NextRequest) {
   try {
@@ -76,8 +81,8 @@ export async function POST(req: NextRequest) {
           // Toggle off — GREATEST защищает от ухода в минус
           const field = getCountField(voteType)
           await tx.vote.delete({ where: { id: existingVote.id } })
-          if (field) {
-            await tx.$executeRaw`UPDATE "Scammer" SET "${field}" = GREATEST("${field}" - 1, 0) WHERE id = ${scammerId}`
+          if (field && VALID_COUNT_FIELDS.has(field)) {
+            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${field}" = GREATEST("${field}" - 1, 0) WHERE id = $1`, scammerId)
           }
           const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
           return {
@@ -95,11 +100,11 @@ export async function POST(req: NextRequest) {
           const newField = getCountField(voteType)
 
           await tx.vote.update({ where: { id: existingVote.id }, data: { voteType } })
-          if (oldField) {
-            await tx.$executeRaw`UPDATE "Scammer" SET "${oldField}" = GREATEST("${oldField}" - 1, 0) WHERE id = ${scammerId}`
+          if (oldField && VALID_COUNT_FIELDS.has(oldField)) {
+            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${oldField}" = GREATEST("${oldField}" - 1, 0) WHERE id = $1`, scammerId)
           }
-          if (newField) {
-            await tx.$executeRaw`UPDATE "Scammer" SET "${newField}" = "${newField}" + 1 WHERE id = ${scammerId}`
+          if (newField && VALID_COUNT_FIELDS.has(newField)) {
+            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${newField}" = "${newField}" + 1 WHERE id = $1`, scammerId)
           }
           const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
           return {
@@ -117,8 +122,8 @@ export async function POST(req: NextRequest) {
       // New vote
       const field = getCountField(voteType)
       await tx.vote.create({ data: { scammerId, voteType, voterId } })
-      if (field) {
-        await tx.$executeRaw`UPDATE "Scammer" SET "${field}" = "${field}" + 1 WHERE id = ${scammerId}`
+      if (field && VALID_COUNT_FIELDS.has(field)) {
+        await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${field}" = "${field}" + 1 WHERE id = $1`, scammerId)
       }
       const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
       return {
