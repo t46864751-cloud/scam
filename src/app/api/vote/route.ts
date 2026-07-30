@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getClientIp, isIpBanned } from '@/lib/ban-check'
+import { grantExpForAction } from '@/lib/exp'
 
 const VALID_TYPES = ['like', 'neutral', 'dislike'] as const
 
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
             data: {
               voted: true,
               voteType,
+              voteId: existingVote.id, // для EXP
               likeCount: updated?.likeCount || 0,
               neutralCount: updated?.neutralCount || 0,
               dislikeCount: updated?.dislikeCount || 0,
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
 
       // New vote
       const field = getCountField(voteType)
-      await tx.vote.create({ data: { scammerId, voteType, voterId } })
+      const newVote = await tx.vote.create({ data: { scammerId, voteType, voterId } })
       if (field && VALID_COUNT_FIELDS.has(field)) {
         await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${field}" = "${field}" + 1 WHERE id = $1`, scammerId)
       }
@@ -130,6 +132,7 @@ export async function POST(req: NextRequest) {
         data: {
           voted: true,
           voteType,
+          voteId: newVote.id, // для EXP
           likeCount: updated?.likeCount || 0,
           neutralCount: updated?.neutralCount || 0,
           dislikeCount: updated?.dislikeCount || 0,
@@ -139,6 +142,14 @@ export async function POST(req: NextRequest) {
 
     if ('error' in result) {
       return NextResponse.json({ error: result.error.message }, { status: result.error.status })
+    }
+
+    // Начисление EXP за голос — только для залогиненных юзеров и только при
+    // новом голосе или переключении (не при toggle off). voteType передаётся как
+    // status: 'like'/'dislike'/'neutral' — для нейтрального нет отдельного правила,
+    // но 'all' покроет все типы если админ создаст такое правило.
+    if (userId && result.data.voteId) {
+      grantExpForAction(userId, 'vote', result.data.voteType as 'like' | 'dislike' | 'neutral', result.data.voteId).catch(() => {})
     }
 
     return NextResponse.json(result.data)

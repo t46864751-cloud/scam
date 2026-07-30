@@ -25,8 +25,8 @@ import { db } from './db'
  */
 export async function grantExpForAction(
   userId: string | null | undefined,
-  actionType: 'submission' | 'comment' | 'search',
-  status: 'approved' | 'rejected' | 'all',
+  actionType: 'submission' | 'comment' | 'search' | 'vote',
+  status: 'approved' | 'rejected' | 'all' | 'like' | 'dislike',
   sourceId: string
 ): Promise<number> {
   if (!userId) return 0
@@ -34,6 +34,7 @@ export async function grantExpForAction(
   try {
     // Подходящие правила: точное совпадение по status ИЛИ rule.status === 'all'.
     // Для search-действий имеет смысл только status='all'.
+    // Для vote-действий status может быть 'like'/'dislike'/'all'.
     const statusFilter =
       actionType === 'search'
         ? { status: 'all' }
@@ -80,6 +81,15 @@ export async function grantExpForAction(
           actionCount = await tx.comment.count({ where })
         } else if (actionType === 'search') {
           actionCount = await tx.searchLog.count({ where: { userId } })
+        } else if (actionType === 'vote') {
+          // Голоса хранятся в Vote.voterId в формате "user:{userId}" или "ip:{ip}".
+          // Для EXP считаем только голоса залогиненного юзера.
+          // status='like' → только лайки, 'dislike' → только дизлайки, 'all' → любые.
+          const voterId = `user:${userId}`
+          const where: { voterId: string; voteType?: string } = { voterId }
+          if (rule.status === 'like') where.voteType = 'like'
+          else if (rule.status === 'dislike') where.voteType = 'dislike'
+          actionCount = await tx.vote.count({ where })
         }
 
         if (actionCount < rule.threshold) continue

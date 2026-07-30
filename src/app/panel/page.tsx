@@ -2710,15 +2710,22 @@ export default function PanelPage() {
                           value={newRuleAction}
                           onChange={e => {
                             setNewRuleAction(e.target.value)
-                            // Для поиска имеет смысл только «Любой» — переключаем автоматически,
-                            // чтобы не провалить серверную валидацию
+                            // Для поиска и голосования подбираем подходящий статус автоматически,
+                            // чтобы не провалить серверную валидацию.
                             if (e.target.value === 'search') setNewRuleStatus('all')
+                            if (e.target.value === 'vote' && !['like', 'dislike', 'all'].includes(newRuleStatus)) {
+                              setNewRuleStatus('all')
+                            }
+                            if ((e.target.value === 'submission' || e.target.value === 'comment') && (newRuleStatus === 'like' || newRuleStatus === 'dislike')) {
+                              setNewRuleStatus('approved')
+                            }
                           }}
                           className="w-full h-9 rounded-lg bg-green-500/5 border border-green-500/20 text-sm text-green-300 px-2 font-mono focus:outline-none focus:border-green-500/50"
                         >
                           <option value="submission">Заявка</option>
                           <option value="comment">Комментарий</option>
                           <option value="search">Поиск</option>
+                          <option value="vote">Голос</option>
                         </select>
                       </div>
                       <div>
@@ -2729,8 +2736,13 @@ export default function PanelPage() {
                           disabled={newRuleAction === 'search'}
                           className="w-full h-9 rounded-lg bg-green-500/5 border border-green-500/20 text-sm text-green-300 px-2 font-mono focus:outline-none focus:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {newRuleAction !== 'search' && <option value="approved">Одобрено</option>}
-                          {newRuleAction !== 'search' && <option value="rejected">Отклонено</option>}
+                          {/* Для submission/comment — статусы модерации */}
+                          {(newRuleAction === 'submission' || newRuleAction === 'comment') && <option value="approved">Одобрено</option>}
+                          {(newRuleAction === 'submission' || newRuleAction === 'comment') && <option value="rejected">Отклонено</option>}
+                          {/* Для vote — типы голосов */}
+                          {newRuleAction === 'vote' && <option value="like">Лайк</option>}
+                          {newRuleAction === 'vote' && <option value="dislike">Дизлайк</option>}
+                          {/* «Любой» доступен всегда */}
                           <option value="all">Любой</option>
                         </select>
                       </div>
@@ -2776,8 +2788,8 @@ export default function PanelPage() {
                     ) : (
                       <div className="space-y-2">
                         {expRules.map((rule: any) => {
-                          const actionLabels: Record<string, string> = { submission: 'Заявка', comment: 'Комментарий', search: 'Поиск' }
-                          const statusLabels: Record<string, string> = { approved: 'Одобрено', rejected: 'Отклонено', all: 'Любой' }
+                          const actionLabels: Record<string, string> = { submission: 'Заявка', comment: 'Комментарий', search: 'Поиск', vote: 'Голос' }
+                          const statusLabels: Record<string, string> = { approved: 'Одобрено', rejected: 'Отклонено', all: 'Любой', like: 'Лайк', dislike: 'Дизлайк' }
                           return (
                             <div key={rule.id} className="flex items-center justify-between rounded-lg bg-green-500/5 border border-green-500/10 px-3 py-2">
                               <div className="font-mono text-sm text-green-300">
