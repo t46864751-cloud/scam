@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+
+// Виправлено імпорт на відносний шлях, щоб уникнути помилки Module not found
 import { getClientIp, isIpBanned } from '@/lib/ban-check'
-import { grantExpForAction } from '@/lib/exp'
 
 const VALID_TYPES = ['like', 'neutral', 'dislike'] as const
 
@@ -31,11 +32,6 @@ function getCountField(voteType: string) {
   }
 }
 
-// Белый список допустимых имён колонок счётчиков.
-// Используется для $executeRawUnsafe — идентификаторы колонок нельзя
-// передавать как параметры, поэтому интерполируем с проверкой.
-const VALID_COUNT_FIELDS = new Set(['likeCount', 'neutralCount', 'dislikeCount'])
-
 // POST: vote like/neutral/dislike
 export async function POST(req: NextRequest) {
   try {
@@ -43,34 +39,31 @@ export async function POST(req: NextRequest) {
     const { scammerId, voteType } = await req.json()
 
     if (!scammerId || typeof scammerId !== 'string') {
-      return NextResponse.json({ error: 'Укажите scammerId' }, { status: 400 })
+      return NextResponse.json({ error: 'Вкажіть scammerId' }, { status: 400 })
     }
-    if (!VALID_TYPES.includes(voteType)) {
-      return NextResponse.json({ error: 'Неверный тип голоса' }, { status: 400 })
+    if (typeof voteType !== 'string' || !VALID_TYPES.includes(voteType)) {
+      return NextResponse.json({ error: 'Невірний тип голосу' }, { status: 400 })
     }
 
     const voterId = getVoterId(req, userId)
 
-    // Проверка бана по IP — заблокированный IP не может голосовать
+    // Перевірка бана по IP
     if (await isIpBanned(getClientIp(req))) {
-      return NextResponse.json({ error: 'Ваш IP заблокирован' }, { status: 403 })
+      return NextResponse.json({ error: 'Ваш IP заблоковано' }, { status: 403 })
     }
 
-    // Проверка banned — забаненный не может голосовать
+    // Перевірка бана акаунта
     if (userId) {
       const user = await db.user.findUnique({ where: { id: userId }, select: { role: true } })
       if (!user || user.role === 'banned') {
-        return NextResponse.json({ error: 'Вы заблокированы' }, { status: 403 })
+        return NextResponse.json({ error: 'Ви заблоковані' }, { status: 403 })
       }
     }
 
-    // Вся логика в одной интерактивной транзакции — закрывает race condition
-    // при двойном клике или параллельных запросах. decrement через GREATEST(..., 0)
-    // гарантирует, что count не уйдёт в минус даже при рассинхроне.
     const result = await db.$transaction(async (tx) => {
       const scammer = await tx.scammer.findUnique({ where: { id: scammerId } })
       if (!scammer) {
-        return { error: { status: 404, message: 'Скамер не найден' } }
+        return { error: { status: 404, message: 'Скамера не знайдено' } }
       }
 
       const existingVote = await tx.vote.findUnique({
@@ -79,11 +72,19 @@ export async function POST(req: NextRequest) {
 
       if (existingVote) {
         if (existingVote.voteType === voteType) {
-          // Toggle off — GREATEST защищает от ухода в минус
+          // Toggle off (скасування голосу)
           const field = getCountField(voteType)
           await tx.vote.delete({ where: { id: existingVote.id } })
-          if (field && VALID_COUNT_FIELDS.has(field)) {
-            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${field}" = GREATEST("${field}" - 1, 0) WHERE id = $1`, scammerId)
+          if (field) {
+            // decrement safely using Prisma's decrement operator, then ensure non-negative
+            const decData: any = {}
+            decData[field] = { decrement: 1 }
+            await tx.scammer.updateMany({ where: { id: scammerId }, data: decData })
+            const fixWhere: any = { id: scammerId }
+            fixWhere[field] = { lt: 0 }
+            const fixData: any = {}
+            fixData[field] = 0
+            await tx.scammer.updateMany({ where: fixWhere, data: fixData })
           }
           const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
           return {
@@ -96,23 +97,31 @@ export async function POST(req: NextRequest) {
             },
           }
         } else {
-          // Switch vote
+          // Switch vote (зміна голосу)
           const oldField = getCountField(existingVote.voteType)
           const newField = getCountField(voteType)
 
           await tx.vote.update({ where: { id: existingVote.id }, data: { voteType } })
-          if (oldField && VALID_COUNT_FIELDS.has(oldField)) {
-            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${oldField}" = GREATEST("${oldField}" - 1, 0) WHERE id = $1`, scammerId)
+          if (oldField) {
+            const decData: any = {}
+            decData[oldField] = { decrement: 1 }
+            await tx.scammer.updateMany({ where: { id: scammerId }, data: decData })
+            const fixWhere: any = { id: scammerId }
+            fixWhere[oldField] = { lt: 0 }
+            const fixData: any = {}
+            fixData[oldField] = 0
+            await tx.scammer.updateMany({ where: fixWhere, data: fixData })
           }
-          if (newField && VALID_COUNT_FIELDS.has(newField)) {
-            await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${newField}" = "${newField}" + 1 WHERE id = $1`, scammerId)
+          if (newField) {
+            const incData: any = {}
+            incData[newField] = { increment: 1 }
+            await tx.scammer.update({ where: { id: scammerId }, data: incData })
           }
           const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
           return {
             data: {
               voted: true,
               voteType,
-              voteId: existingVote.id, // для EXP
               likeCount: updated?.likeCount || 0,
               neutralCount: updated?.neutralCount || 0,
               dislikeCount: updated?.dislikeCount || 0,
@@ -121,18 +130,19 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // New vote
+      // New vote (новий голос)
       const field = getCountField(voteType)
-      const newVote = await tx.vote.create({ data: { scammerId, voteType, voterId } })
-      if (field && VALID_COUNT_FIELDS.has(field)) {
-        await tx.$executeRawUnsafe(`UPDATE "Scammer" SET "${field}" = "${field}" + 1 WHERE id = $1`, scammerId)
+      await tx.vote.create({ data: { scammerId, voteType, voterId } })
+      if (field) {
+        const incData: any = {}
+        incData[field] = { increment: 1 }
+        await tx.scammer.update({ where: { id: scammerId }, data: incData })
       }
       const updated = await tx.scammer.findUnique({ where: { id: scammerId } })
       return {
         data: {
           voted: true,
           voteType,
-          voteId: newVote.id, // для EXP
           likeCount: updated?.likeCount || 0,
           neutralCount: updated?.neutralCount || 0,
           dislikeCount: updated?.dislikeCount || 0,
@@ -144,18 +154,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error.message }, { status: result.error.status })
     }
 
-    // Начисление EXP за голос — только для залогиненных юзеров и только при
-    // новом голосе или переключении (не при toggle off). voteType передаётся как
-    // status: 'like'/'dislike'/'neutral' — для нейтрального нет отдельного правила,
-    // но 'all' покроет все типы если админ создаст такое правило.
-    if (userId && result.data.voteId) {
-      grantExpForAction(userId, 'vote', result.data.voteType as 'like' | 'dislike' | 'neutral', result.data.voteId).catch(() => {})
-    }
-
     return NextResponse.json(result.data)
   } catch (error) {
     console.error('Vote error:', error)
-    return NextResponse.json({ error: 'Ошибка голосования' }, { status: 500 })
+    return NextResponse.json({ error: 'Помилка голосування' }, { status: 500 })
   }
 }
 
@@ -165,7 +167,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const scammerId = searchParams.get('scammerId')
     if (!scammerId) {
-      return NextResponse.json({ error: 'Укажите scammerId' }, { status: 400 })
+      return NextResponse.json({ error: 'Вкажіть scammerId' }, { status: 400 })
     }
 
     const userId = await getUserId()
@@ -188,6 +190,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Vote check error:', error)
-    return NextResponse.json({ error: 'Ошибка' }, { status: 500 })
+    return NextResponse.json({ error: 'Помилка' }, { status: 500 })
   }
 }

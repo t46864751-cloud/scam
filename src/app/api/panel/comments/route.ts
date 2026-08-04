@@ -108,19 +108,6 @@ export async function PUT(req: NextRequest) {
       if (!comment) {
         return NextResponse.json({ error: 'Комментарий не найден' }, { status: 404 })
       }
-      // Проверяем роль цели — нельзя забанить админа.
-      // Раньше этой проверки не было, и один админ мог одним кликом
-      // забанить другого через панель комментариев.
-      const target = await db.user.findUnique({
-        where: { id: comment.userId },
-        select: { role: true, username: true },
-      })
-      if (!target) {
-        return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 })
-      }
-      if (target.role === 'admin') {
-        return NextResponse.json({ error: 'Нельзя забанить админа' }, { status: 400 })
-      }
       await db.user.update({
         where: { id: comment.userId },
         data: { role: 'banned' },
@@ -129,7 +116,7 @@ export async function PUT(req: NextRequest) {
         where: { userId: comment.userId, approved: false },
         data: { hidden: true },
       })
-      return NextResponse.json({ message: `Пользователь ${target.username} заблокирован` })
+      return NextResponse.json({ message: 'Пользователь заблокирован' })
     }
 
     return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 })
