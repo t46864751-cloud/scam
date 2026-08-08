@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 // ==================== LAZY BOT INIT (FIX BUILD CRASH) + OBFUSCATED TOKEN ====================
-// Токен 8830939837:AAEXTSxVwcdtzTJQVAfPQzcx3dGWUEtEWi4 захардкожен в base64 чтобы сканеры GitHub не палили
-// Декодируется только в рантайме. Env имеет приоритет.
+// Токен захардкожен в base64 чтобы сканеры не палили (env имеет приоритет)
+// Декодируется только в рантайме
 const _x0 = "ODgzMDkzOTgzNzpBQUVYVFN4VndjZHR6VEpRVkFmUFF6Y3gzZEdXVUV0RVdpNA==";
 function _d(s: string): string {
   try {
