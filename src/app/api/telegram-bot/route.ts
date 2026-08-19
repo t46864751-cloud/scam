@@ -363,6 +363,142 @@ function isSpamming(userId: number): { spam: boolean; timeLeft: number; reason?:
   return { spam: false, timeLeft: 0 };
 }
 
+// ==================== VOTE LOGIC (лайк/дизлайк прямо из бота) ====================
+function getCountField(voteType: string): string | null {
+  switch (voteType) {
+    case "like": return "likeCount";
+    case "dislike": return "dislikeCount";
+    case "neutral": return "neutralCount";
+    default: return null;
+  }
+}
+
+async function getUserVote(scammerId: string, tgId: number): Promise<string | null> {
+  try {
+    const voterId = `tg:${tgId}`;
+    const v = await db.vote.findUnique({
+      where: { scammerId_voterId: { scammerId, voterId } } as any,
+    });
+    // @ts-ignore
+    return v?.voteType || null;
+  } catch { return null; }
+}
+
+async function doVote(scammerId: string, tgId: number, voteType: string) {
+  const voterId = `tg:${tgId}`;
+  try {
+    return await db.$transaction(async (tx: any) => {
+      const scammer = await tx.scammer.findUnique({ where: { id: scammerId } });
+      if (!scammer) return null;
+
+      const existing = await tx.vote.findUnique({
+        where: { scammerId_voterId: { scammerId, voterId } } as any,
+      });
+
+      let newVoteType: string | null = voteType;
+
+      if (existing) {
+        if (existing.voteType === voteType) {
+          // toggle off - убираем голос
+          await tx.vote.delete({ where: { id: existing.id } });
+          const field = getCountField(voteType);
+          if (field) {
+            await tx.scammer.update({ where: { id: scammerId }, data: { [field]: { decrement: 1 } } });
+            await tx.scammer.updateMany({ where: { id: scammerId, [field]: { lt: 0 } } as any, data: { [field]: 0 } as any });
+          }
+          newVoteType = null;
+        } else {
+          // switch vote
+          await tx.vote.update({ where: { id: existing.id }, data: { voteType } });
+          const oldField = getCountField(existing.voteType);
+          const newField = getCountField(voteType);
+          if (oldField) {
+            await tx.scammer.update({ where: { id: scammerId }, data: { [oldField]: { decrement: 1 } } });
+            await tx.scammer.updateMany({ where: { id: scammerId, [oldField]: { lt: 0 } } as any, data: { [oldField]: 0 } as any });
+          }
+          if (newField) {
+            await tx.scammer.update({ where: { id: scammerId }, data: { [newField]: { increment: 1 } } });
+          }
+        }
+      } else {
+        await tx.vote.create({ data: { scammerId, voteType, voterId } });
+        const field = getCountField(voteType);
+        if (field) {
+          await tx.scammer.update({ where: { id: scammerId }, data: { [field]: { increment: 1 } } });
+        }
+      }
+
+      const updated = await tx.scammer.findUnique({ where: { id: scammerId } });
+      return { scammer: updated, voteType: newVoteType };
+    });
+  } catch (e) {
+    console.error("doVote error", e);
+    return null;
+  }
+}
+
+function buildVoteKeyboard(scammer: any, userVote: string | null, lang: SupportedLang): InlineKeyboard {
+  const likeLabel = userVote === "like" ? "👍 ✅" : `👍 ${scammer.likeCount || 0}`;
+  const dislikeLabel = userVote === "dislike" ? "👎 ✅" : `👎 ${scammer.dislikeCount || 0}`;
+  const neutralLabel = userVote === "neutral" ? "🤷 ✅" : `🤷 ${scammer.neutralCount || 0}`;
+
+  const kb = new InlineKeyboard()
+    .text(likeLabel, `vote_${scammer.id}_like`)
+    .text(neutralLabel, `vote_${scammer.id}_neutral`)
+    .text(dislikeLabel, `vote_${scammer.id}_dislike`)
+    .row()
+    .url(t[lang].btnOpenSite, `https://scam-steel.vercel.app/?q=${encodeURIComponent(scammer.name)}`)
+    .row()
+    .url(t[lang].btnReport, "https://scam-steel.vercel.app/")
+    .url(t[lang].btnChat, "https://t.me/wocmf")
+    .row()
+    .url(t[lang].btnSupport, "https://t.me/send?start=IVkrkNlUFFtA")
+    .text("🌐 Language / Язык", "lang_ua");
+
+  return kb;
+}
+
+async function buildCardText(scammer: any, lang: SupportedLang): Promise<string> {
+  const statusMap = await getStatusMap();
+  const sm = statusMap.get(scammer.status);
+  const statusLabel = sm?.label || scammer.status;
+  const emoji = getStatusEmoji(scammer.status);
+
+  const noText: Record<SupportedLang, string> = { ua: "Не вказано", ru: "Не указан", pl: "Nie podano", en: "Not specified" };
+  const safeName = escapeHtml(scammer.name?.startsWith("@") ? scammer.name : `@${scammer.name}`);
+  const safeId = escapeHtml(scammer.telegramUserId || noText[lang]);
+  const safeDesc = escapeHtml((scammer.description || "").slice(0, 600)) || (lang === "ua" ? "Опис відсутній" : lang === "ru" ? "Описания нет" : lang === "pl" ? "Brak opisu" : "No description");
+  const safeProof = escapeHtml(scammer.proofLink || "");
+  const safeAmount = escapeHtml(scammer.scamAmount ? `${scammer.scamAmount} ${scammer.scamCurrency || ""}` : "");
+  const safeType = escapeHtml(scammer.scammerType || "");
+
+  const dateObj = scammer.updatedAt || scammer.createdAt || new Date();
+  const localeMap: Record<SupportedLang, string> = { ua: "uk-UA", ru: "ru-RU", pl: "pl-PL", en: "en-US" };
+  let formattedDate = "";
+  try {
+    formattedDate = new Date(dateObj).toLocaleDateString(localeMap[lang], { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { formattedDate = new Date().toLocaleDateString(); }
+
+  const searchCount = scammer.searchCount ?? 0;
+  const likeCount = scammer.likeCount ?? 0;
+  const dislikeCount = scammer.dislikeCount ?? 0;
+  const neutralCount = scammer.neutralCount ?? 0;
+
+  let text = `${t[lang].foundHeader}\n\n`;
+  text += `👤 <b>Юзернейм:</b> ${safeName}\n`;
+  text += `🆔 <b>ID:</b> <code>${safeId}</code>\n`;
+  text += `📊 <b>Статус:</b> ${emoji} ${escapeHtml(statusLabel)}\n`;
+  if (safeAmount) text += `${t[lang].amount}: <b>${safeAmount}</b>\n`;
+  if (safeType) text += `${t[lang].type}: <b>${safeType}</b>\n`;
+  text += `📝 <b>Опис:</b> ${safeDesc}\n`;
+  text += `${t[lang].searchCount}: <b>${searchCount}</b>\n`;
+  text += `👍 ${likeCount} | 🤷 ${neutralCount} | 👎 ${dislikeCount}\n`;
+  text += `${t[lang].addedDate}: <b>${formattedDate}</b>\n`;
+  if (safeProof) text += `🧾 <b>Пруфы:</b> <a href="${escapeHtml(scammer.proofLink)}">link</a>\n`;
+  text += `\n───────────────\n🌐 <b>Сайт:</b> https://scam-steel.vercel.app/\n💬 <b>Чат:</b> @wocmf\n`;
+  return text;
+}
+
 // ==================== SEARCH LOGIC ====================
 async function searchScammers(parsed: ParsedInput, limit = 6) {
   const conditions: any[] = [];
@@ -553,6 +689,56 @@ function setupBot(bot: Bot) {
     }
   });
 
+  // Vote handler - лайк/дизлайк прямо из бота
+  bot.callbackQuery(/^vote_(.+?)_(like|dislike|neutral)$/, async (ctx) => {
+    const scammerId = ctx.match[1];
+    const voteType = ctx.match[2];
+    const tgId = ctx.from?.id;
+    const lang = getUserLanguage(tgId, ctx.from?.language_code);
+    if (!tgId) {
+      await ctx.answerCallbackQuery({ text: "❌ Ошибка" });
+      return;
+    }
+    try {
+      await ctx.answerCallbackQuery({ text: voteType === "like" ? "👍 Голос учтен" : voteType === "dislike" ? "👎 Голос учтен" : "🤷 Голос учтен" });
+      const result = await doVote(scammerId, tgId, voteType);
+      if (!result || !result.scammer) {
+        await ctx.reply("❌ Скамер не найден", { parse_mode: "HTML" });
+        return;
+      }
+      const updatedScammer = result.scammer;
+      const newVote = result.voteType;
+
+      const newText = await buildCardText(updatedScammer, lang);
+      const newKb = buildVoteKeyboard(updatedScammer, newVote, lang);
+
+      // Пытаемся отредактировать сообщение (текст или подпись фото)
+      try {
+        const msg = ctx.callbackQuery.message as any;
+        if (msg?.photo || msg?.document) {
+          await ctx.editMessageCaption({
+            caption: newText.length > 900 ? newText.slice(0, 900) + "…" : newText,
+            parse_mode: "HTML",
+            reply_markup: newKb,
+          });
+        } else {
+          await ctx.editMessageText(newText, {
+            parse_mode: "HTML",
+            reply_markup: newKb,
+            link_preview_options: { is_disabled: true },
+          });
+        }
+      } catch (editErr) {
+        // Fallback: если не получилось отредактировать (например сообщение старое) - шлем новое
+        console.error("edit after vote failed", editErr);
+        await sendScammerCard(ctx, updatedScammer, lang);
+      }
+    } catch (e) {
+      console.error("vote callback error", e);
+      await ctx.answerCallbackQuery({ text: "⚠️ Ошибка" });
+    }
+  });
+
   // Contact shared
   bot.on("message:contact", async (ctx) => {
     const contact = ctx.message.contact;
@@ -707,106 +893,39 @@ async function handleSearch(ctx: any, rawInput: string, forcedLang?: SupportedLa
   }
 }
 
-// ==================== CARD SENDER ====================
+// ==================== CARD SENDER (с лайк/дизлайк кнопками) ====================
 async function sendScammerCard(ctx: any, scammer: any, lang: SupportedLang) {
-  const statusMap = await getStatusMap();
-  const sm = statusMap.get(scammer.status);
-  const statusLabel = sm?.label || scammer.status;
-  const emoji = getStatusEmoji(scammer.status);
-
-  const noText: Record<SupportedLang, string> = {
-    ua: "Не вказано",
-    ru: "Не указан",
-    pl: "Nie podano",
-    en: "Not specified",
-  };
-
-  const safeName = escapeHtml(scammer.name?.startsWith("@") ? scammer.name : `@${scammer.name}`);
-  const safeId = escapeHtml(scammer.telegramUserId || noText[lang]);
-  const safeDesc = escapeHtml((scammer.description || "").slice(0, 600)) || (lang === "ua" ? "Опис відсутній" : lang === "ru" ? "Описания нет" : lang === "pl" ? "Brak opisu" : "No description");
-  const safeProof = escapeHtml(scammer.proofLink || "");
-  const safeAmount = escapeHtml(scammer.scamAmount ? `${scammer.scamAmount} ${scammer.scamCurrency || ""}` : "");
-  const safeType = escapeHtml(scammer.scammerType || "");
-
-  const dateObj = scammer.updatedAt || scammer.createdAt || new Date();
-  const localeMap: Record<SupportedLang, string> = { ua: "uk-UA", ru: "ru-RU", pl: "pl-PL", en: "en-US" };
-  let formattedDate = "";
-  try {
-    formattedDate = new Date(dateObj).toLocaleDateString(localeMap[lang], {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    formattedDate = new Date().toLocaleDateString();
+  const tgId = ctx.from?.id;
+  let userVote: string | null = null;
+  if (tgId) {
+    userVote = await getUserVote(scammer.id, tgId);
   }
 
-  const searchCount = scammer.searchCount ?? 0;
-  const likeCount = scammer.likeCount ?? 0;
-  const dislikeCount = scammer.dislikeCount ?? 0;
+  const text = await buildCardText(scammer, lang);
+  const kb = buildVoteKeyboard(scammer, userVote, lang);
 
-  let text = `${t[lang].foundHeader}\n\n`;
-  text += `👤 <b>Юзернейм:</b> ${safeName}\n`;
-  text += `🆔 <b>ID:</b> <code>${safeId}</code>\n`;
-  text += `📊 <b>Статус:</b> ${emoji} ${escapeHtml(statusLabel)}\n`;
-  if (safeAmount) text += `${t[lang].amount}: <b>${safeAmount}</b>\n`;
-  if (safeType) text += `${t[lang].type}: <b>${safeType}</b>\n`;
-  text += `📝 <b>Опис:</b> ${safeDesc}\n`;
-  text += `${t[lang].searchCount}: <b>${searchCount}</b>\n`;
-  text += `👍 ${likeCount} / 👎 ${dislikeCount}\n`;
-  text += `${t[lang].addedDate}: <b>${formattedDate}</b>\n`;
-  if (safeProof) text += `🧾 <b>Пруфы:</b> ${safeProof ? `<a href="${escapeHtml(scammer.proofLink)}">link</a>` : "—"}\n`;
-  text += `\n───────────────\n`;
-  text += `🌐 <b>Сайт:</b> https://frostscambase.vercel.app/\n`;
-  text += `💬 <b>Чат:</b> @wocmf\n`;
-
-  const kb = new InlineKeyboard()
-    .url(t[lang].btnOpenSite, `https://frostscambase.vercel.app/?q=${encodeURIComponent(scammer.name)}`)
-    .url(t[lang].btnAppeal, `https://frostscambase.vercel.app/`)
-    .row()
-    .url(t[lang].btnReport, "https://frostscambase.vercel.app/")
-    .url(t[lang].btnChat, "https://t.me/wocmf")
-    .row()
-    .url(t[lang].btnSupport, "https://t.me/send?start=IVkrkNlUFFtA")
-    .text(t[lang].btnCheckMore, "lang_ua"); // dummy to show language chooser as check more? Actually we want language chooser
-
-  // Improve last row - check more triggers language chooser? Better to just offer lang change
-  const finalKb = new InlineKeyboard()
-    .url(t[lang].btnOpenSite, `https://frostscambase.vercel.app/?q=${encodeURIComponent(scammer.name)}`)
-    .row()
-    .url(t[lang].btnReport, "https://frostscambase.vercel.app/")
-    .url(t[lang].btnChat, "https://t.me/wocmf")
-    .row()
-    .url(t[lang].btnSupport, "https://t.me/send?start=IVkrkNlUFFtA")
-    .text("🌐 Language / Язык", "lang_ua");
-
-  // If proof is image, send photo
   const isImage = scammer.proofLink && /\.(jpe?g|png|webp|gif|bmp|avif)(\?.*)?$/i.test(scammer.proofLink);
 
   try {
     if (isImage) {
-      // Try to send photo with caption (cap max 1024 chars)
       const caption = text.length > 900 ? text.slice(0, 900) + "…" : text;
       await ctx.replyWithPhoto(scammer.proofLink, {
         caption,
         parse_mode: "HTML",
-        reply_markup: finalKb,
+        reply_markup: kb,
       });
     } else {
       await ctx.reply(text, {
         parse_mode: "HTML",
-        reply_markup: finalKb,
+        reply_markup: kb,
         link_preview_options: { is_disabled: true },
       });
     }
   } catch (e) {
-    // Fallback to text if photo fails
     console.error("photo send fail", e);
     await ctx.reply(text, {
       parse_mode: "HTML",
-      reply_markup: finalKb,
+      reply_markup: kb,
       link_preview_options: { is_disabled: true },
     });
   }
