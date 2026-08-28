@@ -34,6 +34,8 @@ import {
   ChevronLeft,
   Copy,
   Check,
+  Filter,
+  Hash,
   BarChart3,
   Database,
   FileText,
@@ -894,143 +896,103 @@ function SearchView() {
         </div>
       </div>
 
-      {/* Floating scammers when not searching */}
-      {!searched && !tagSearchResults && <FloatingScammers />}
-
-      {/* Tag search bar — status types like СКАМ, ПРОВЕРЕН, etc. */}
+      {/* Tag search — wrap chips, no carousel */}
       {!searched && (
-        <div className="mt-5 px-2">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 rounded-full bg-gradient-to-b from-blue-500 to-purple-500" />
-              <p className="text-[13px] font-semibold text-foreground/80 tracking-wide">Поиск по статусам</p>
-              {selectedTags.length > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
-                  {selectedTags.length} выбрано
-                </span>
+        <div className="mt-4">
+          <div className="glass rounded-2xl p-3.5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
+                  <Filter className="w-3.5 h-3.5 text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold leading-tight">Фильтр по статусам</p>
+                  <p className="text-[10px] text-muted-foreground">можно выбрать несколько</p>
+                </div>
+              </div>
+              {allTags.length > 0 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {selectedTags.length > 0 && (
+                    <button
+                      onClick={clearTagSearch}
+                      className="h-7 px-2.5 rounded-lg text-[11px] text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                    >
+                      Сбросить
+                    </button>
+                  )}
+                  <button
+                    onClick={selectedTags.length === allTags.length ? clearTagSearch : selectAllTags}
+                    className="h-7 px-2.5 rounded-lg text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+                  >
+                    {selectedTags.length === allTags.length ? 'Снять все' : 'Все'}
+                  </button>
+                </div>
               )}
             </div>
-            {allTags.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                {selectedTags.length > 0 && (
-                  <button
-                    onClick={clearTagSearch}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Сбросить
-                  </button>
-                )}
-                <button
-                  onClick={selectAllTags}
-                  className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  {selectedTags.length === allTags.length ? 'Снять все' : 'Все'}
-                </button>
-              </div>
-            )}
-          </div>
-          {allTags.length > 0 ? (
-            <div className="relative">
-              {/* Левая стрелка — только десктоп */}
-              <button
-                onClick={() => scrollTags('left')}
-                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full glass items-center justify-center hover:bg-white/10 transition-colors shrink-0"
-                aria-label="Прокрутить влево"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div
-                ref={tagScrollRef}
-                className="flex gap-2 overflow-x-auto pb-2 scrollbar-none sm:px-9 snap-x snap-mandatory scroll-smooth"
-                onWheel={(e) => {
-                  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                    e.currentTarget.scrollLeft += e.deltaY
-                    e.preventDefault()
-                  }
-                }}
-              >
+
+            {allTags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
                 {allTags.map((tag, idx) => {
                   const isSelected = selectedTags.some(t => t.key === tag.key)
                   return (
                     <motion.button
                       key={tag.key}
+                      type="button"
                       onClick={() => handleTagToggle({ key: tag.key, text: tag.text, color: tag.color })}
-                      initial={{ opacity: 0, y: 12, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
-                      whileHover={{ scale: 1.06, y: -1 }}
-                      whileTap={{ scale: 0.97 }}
-                      className="relative snap-start shrink-0 group"
+                      initial={{ opacity: 0, scale: 0.92 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: Math.min(idx * 0.03, 0.25) }}
+                      whileTap={{ scale: 0.96 }}
+                      className="inline-flex items-center gap-1.5 h-8 pl-2 pr-1.5 rounded-full border text-[12px] font-semibold transition-all duration-200"
+                      style={isSelected ? {
+                        backgroundColor: tag.color,
+                        color: tag.textColor || '#fff',
+                        borderColor: tag.color,
+                        boxShadow: `0 4px 14px ${tag.color}40`,
+                      } : {
+                        backgroundColor: tag.color + '18',
+                        color: tag.textColor || tag.color,
+                        borderColor: tag.color + '40',
+                      }}
                     >
-                      {/* Glow backdrop */}
-                      <div
-                        className="absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-40 blur-md transition-opacity duration-300"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      {/* Active ring glow */}
-                      {isSelected && (
-                        <motion.div
-                          layoutId={`tagGlow-${tag.key}`}
-                          className="absolute -inset-1.5 rounded-2xl blur-md"
-                          style={{ backgroundColor: tag.color, opacity: 0.35 }}
-                          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      {isSelected ? (
+                        <Check className="w-3 h-3 shrink-0" strokeWidth={3} />
+                      ) : (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: tag.color }}
                         />
                       )}
-                      {/* Button body */}
-                      <div
-                        className={`relative flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[12px] font-semibold backdrop-blur-sm border transition-all duration-200 ${
-                          isSelected ? 'border-transparent shadow-lg' : 'border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 hover:border-white/20'
-                        }`}
-                        style={isSelected ? {
-                          backgroundColor: tag.color + 'dd',
-                          color: tag.textColor,
-                          borderColor: tag.color,
-                          boxShadow: `0 4px 20px ${tag.color}55, 0 0 40px ${tag.color}22`
-                        } : {
-                          backgroundColor: tag.color + '15',
-                          color: tag.textColor,
-                          borderColor: tag.color + '30',
+                      <span className="truncate max-w-[140px]">{tag.text}</span>
+                      <span
+                        className="min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center"
+                        style={{
+                          backgroundColor: isSelected ? 'rgba(0,0,0,0.18)' : tag.color + '28',
+                          color: tag.textColor || tag.color,
                         }}
                       >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{
-                            backgroundColor: isSelected ? tag.textColor : tag.color,
-                            boxShadow: isSelected ? `0 0 6px ${tag.textColor}` : `0 0 6px ${tag.color}`
-                          }}
-                        />
-                        <span>{tag.text}</span>
-                        <span
-                          className="ml-0.5 text-[10px] font-bold px-1.5 py-0 rounded-lg"
-                          style={{
-                            backgroundColor: isSelected ? tag.textColor + '25' : tag.color + '20',
-                            color: tag.textColor,
-                          }}
-                        >
-                          {tag.count}
-                        </span>
-                      </div>
+                        {tag.count}
+                      </span>
                     </motion.button>
                   )
                 })}
               </div>
-              {/* Правая стрелка — только десктоп */}
-              <button
-                onClick={() => scrollTags('right')}
-                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full glass items-center justify-center hover:bg-white/10 transition-colors shrink-0"
-                aria-label="Прокрутить вправо"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              {/* Fade edges (не перекрываем стрелки на десктопе) */}
-              <div className="sm:hidden absolute left-0 top-0 bottom-2 w-6 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-              <div className="sm:hidden absolute right-0 top-0 bottom-2 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground/50">Нет статусов</p>
-          )}
+            ) : (
+              <p className="text-xs text-muted-foreground/50">Нет статусов</p>
+            )}
+
+            {tagSearchLoading && selectedTags.length > 0 && (
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                <span className="text-[11px] text-muted-foreground">Ищем по выбранным статусам…</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
+
+      {/* Floating scammers when not searching */}
+      {!searched && !tagSearchResults && <FloatingScammers />}
 
       {/* Tag search results */}
       {tagSearchResults && (
