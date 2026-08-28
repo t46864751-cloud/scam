@@ -538,6 +538,11 @@ export default function PanelPage() {
   const [sponsorEditUser, setSponsorEditUser] = useState<any>(null)
   const [sponsorDonated, setSponsorDonated] = useState('')
   const [sponsorIsSponsor, setSponsorIsSponsor] = useState(true)
+  const [sponsorNewName, setSponsorNewName] = useState('')
+  const [sponsorNewDonated, setSponsorNewDonated] = useState('')
+  const [sponsorNewIsSponsor, setSponsorNewIsSponsor] = useState(true)
+  const [sponsorNewImage, setSponsorNewImage] = useState('')
+  const [sponsorCreating, setSponsorCreating] = useState(false)
 
   // Reject with reason
   const [rejectSub, setRejectSub] = useState<Submission | null>(null)
@@ -1346,6 +1351,38 @@ export default function PanelPage() {
       // refresh list
       handleSponsorSearch()
     } catch { toast.error('Ошибка') }
+  }
+
+  const handleSponsorCreate = async () => {
+    const name = sponsorNewName.trim()
+    if (!name) { toast.error('Введи имя'); return }
+    const donated = sponsorNewDonated === '' ? 0 : parseInt(sponsorNewDonated)
+    if (isNaN(donated) || donated < 0 || !Number.isInteger(donated)) {
+      toast.error('Сумма должна быть целым числом >= 0')
+      return
+    }
+    setSponsorCreating(true)
+    try {
+      const res = await fetch('/api/panel/sponsors', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: name,
+          donated,
+          isSponsor: sponsorNewIsSponsor,
+          image: sponsorNewImage.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error); return }
+      toast.success('Донатер добавлен без аккаунта')
+      setSponsorNewName('')
+      setSponsorNewDonated('')
+      setSponsorNewImage('')
+      setSponsorNewIsSponsor(true)
+      handleSponsorSearch()
+    } catch { toast.error('Ошибка') }
+    finally { setSponsorCreating(false) }
   }
 
   const handleSponsorDelete = async (userId: string) => {
@@ -2970,6 +3007,32 @@ export default function PanelPage() {
                     <p className="text-[10px] text-yellow-600/70 font-mono mt-2">Оставь пустым чтобы показать текущий топ донатеров • Ищи по нику для добавления</p>
                   </div>
 
+                  <div className="glass rounded-xl p-4 mb-4 border border-yellow-500/20">
+                    <h3 className="text-sm font-bold font-mono text-yellow-300 mb-3">{'>'} Добавить без аккаунта</h3>
+                    <p className="text-[10px] text-yellow-600/70 font-mono mb-3">Человек не регистрировался — просто имя в топ. Войти под этим ником нельзя.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Имя *</label>
+                        <Input placeholder="Как показать в топе..." value={sponsorNewName} onChange={e => setSponsorNewName(e.target.value.slice(0, 40))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Сумма доната</label>
+                        <Input type="number" min="0" placeholder="0" value={sponsorNewDonated} onChange={e => setSponsorNewDonated(e.target.value.replace(/[^0-9]/g, ''))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Аватар (ссылка, необязательно)</label>
+                        <Input placeholder="https://..." value={sponsorNewImage} onChange={e => setSponsorNewImage(e.target.value)} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                      </div>
+                      <div className="flex items-center gap-2 sm:col-span-2">
+                        <input type="checkbox" checked={sponsorNewIsSponsor} onChange={e => setSponsorNewIsSponsor(e.target.checked)} className="w-4 h-4 rounded border-yellow-500/20" />
+                        <span className="text-xs font-mono text-yellow-300">Приписка ✨ Sponsor</span>
+                      </div>
+                    </div>
+                    <Button onClick={handleSponsorCreate} disabled={sponsorCreating || !sponsorNewName.trim()} className="mt-3 h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg">
+                      {sponsorCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Добавить в топ</>}
+                    </Button>
+                  </div>
+
                   {/* Результаты */}
                   <div className="space-y-2">
                     {sponsorSearchResults.length === 0 && !sponsorSearchLoading ? (
@@ -2990,6 +3053,9 @@ export default function PanelPage() {
                                   <p className="font-mono font-semibold text-sm truncate text-yellow-100">{u.username}</p>
                                   {u.isSponsor && (
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-bold border border-yellow-300/50">✨ Sponsor</span>
+                                  )}
+                                  {u.isPlaceholder && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-yellow-200/80 border border-yellow-500/20 font-mono">без аккаунта</span>
                                   )}
                                   <span className="text-[10px] text-yellow-600 font-mono">{u.role}</span>
                                 </div>
