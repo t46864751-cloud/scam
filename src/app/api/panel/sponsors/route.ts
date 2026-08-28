@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
           exp: true,
           isSponsor: true,
           donated: true,
+          isPlaceholder: true,
           createdAt: true,
         },
       }),

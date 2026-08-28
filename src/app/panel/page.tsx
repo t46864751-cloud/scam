@@ -543,6 +543,7 @@ export default function PanelPage() {
   const [sponsorNewIsSponsor, setSponsorNewIsSponsor] = useState(true)
   const [sponsorNewImage, setSponsorNewImage] = useState('')
   const [sponsorCreating, setSponsorCreating] = useState(false)
+  const [sponsorShowCreate, setSponsorShowCreate] = useState(false)
 
   // Reject with reason
   const [rejectSub, setRejectSub] = useState<Submission | null>(null)
@@ -1380,6 +1381,7 @@ export default function PanelPage() {
       setSponsorNewDonated('')
       setSponsorNewImage('')
       setSponsorNewIsSponsor(true)
+      setSponsorShowCreate(false)
       handleSponsorSearch()
     } catch { toast.error('Ошибка') }
     finally { setSponsorCreating(false) }
@@ -3007,30 +3009,47 @@ export default function PanelPage() {
                     <p className="text-[10px] text-yellow-600/70 font-mono mt-2">Оставь пустым чтобы показать текущий топ донатеров • Ищи по нику для добавления</p>
                   </div>
 
-                  <div className="glass rounded-xl p-4 mb-4 border border-yellow-500/20">
-                    <h3 className="text-sm font-bold font-mono text-yellow-300 mb-3">{'>'} Добавить без аккаунта</h3>
-                    <p className="text-[10px] text-yellow-600/70 font-mono mb-3">Человек не регистрировался — просто имя в топ. Войти под этим ником нельзя.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Имя *</label>
-                        <Input placeholder="Как показать в топе..." value={sponsorNewName} onChange={e => setSponsorNewName(e.target.value.slice(0, 40))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                  <div className="mb-4">
+                    {!sponsorShowCreate ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setSponsorShowCreate(true)}
+                        className="h-10 border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/10 font-mono rounded-lg"
+                      >
+                        <Plus className="w-4 h-4 mr-1" /> Добавить без аккаунта
+                      </Button>
+                    ) : (
+                      <div className="glass rounded-xl p-4 border border-yellow-500/20">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-bold font-mono text-yellow-300">{'>'} Добавить без аккаунта</h3>
+                          <button onClick={() => setSponsorShowCreate(false)} className="p-1 rounded hover:bg-yellow-500/10">
+                            <X className="w-4 h-4 text-yellow-400" />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-yellow-600/70 font-mono mb-3">Человек не регистрировался — просто имя в топ. Войти под этим ником нельзя.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Имя *</label>
+                            <Input placeholder="Как показать в топе..." value={sponsorNewName} onChange={e => setSponsorNewName(e.target.value.slice(0, 40))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Сумма доната</label>
+                            <Input type="number" min="0" placeholder="0" value={sponsorNewDonated} onChange={e => setSponsorNewDonated(e.target.value.replace(/[^0-9]/g, ''))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Аватар (ссылка, необязательно)</label>
+                            <Input placeholder="https://..." value={sponsorNewImage} onChange={e => setSponsorNewImage(e.target.value)} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
+                          </div>
+                          <div className="flex items-center gap-2 sm:col-span-2">
+                            <input type="checkbox" checked={sponsorNewIsSponsor} onChange={e => setSponsorNewIsSponsor(e.target.checked)} className="w-4 h-4 rounded border-yellow-500/20" />
+                            <span className="text-xs font-mono text-yellow-300">Приписка ✨ Sponsor</span>
+                          </div>
+                        </div>
+                        <Button onClick={handleSponsorCreate} disabled={sponsorCreating || !sponsorNewName.trim()} className="mt-3 h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg">
+                          {sponsorCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Добавить в топ</>}
+                        </Button>
                       </div>
-                      <div>
-                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Сумма доната</label>
-                        <Input type="number" min="0" placeholder="0" value={sponsorNewDonated} onChange={e => setSponsorNewDonated(e.target.value.replace(/[^0-9]/g, ''))} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="text-[11px] text-yellow-600 font-mono mb-1 block">Аватар (ссылка, необязательно)</label>
-                        <Input placeholder="https://..." value={sponsorNewImage} onChange={e => setSponsorNewImage(e.target.value)} className="h-10 rounded-lg bg-yellow-500/5 border-yellow-500/20 text-yellow-200 font-mono" />
-                      </div>
-                      <div className="flex items-center gap-2 sm:col-span-2">
-                        <input type="checkbox" checked={sponsorNewIsSponsor} onChange={e => setSponsorNewIsSponsor(e.target.checked)} className="w-4 h-4 rounded border-yellow-500/20" />
-                        <span className="text-xs font-mono text-yellow-300">Приписка ✨ Sponsor</span>
-                      </div>
-                    </div>
-                    <Button onClick={handleSponsorCreate} disabled={sponsorCreating || !sponsorNewName.trim()} className="mt-3 h-10 bg-yellow-600 hover:bg-yellow-700 text-white font-mono rounded-lg">
-                      {sponsorCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Добавить в топ</>}
-                    </Button>
+                    )}
                   </div>
 
                   {/* Результаты */}
@@ -3059,7 +3078,12 @@ export default function PanelPage() {
                                   )}
                                   <span className="text-[10px] text-yellow-600 font-mono">{u.role}</span>
                                 </div>
-                                <p className="text-[11px] text-yellow-600/70 font-mono">💰 {u.donated || 0} • ⚡ {u.exp || 0} EXP • {new Date(u.createdAt).toLocaleDateString('ru-RU')}</p>
+                                <p className="text-[11px] text-yellow-600/70 font-mono">
+                                  {u.donated > 0 ? `💰 ${u.donated}` : ''}
+                                  {!u.isPlaceholder && `${u.donated > 0 ? ' • ' : ''}⚡ ${u.exp || 0} EXP`}
+                                  {(u.donated > 0 || !u.isPlaceholder) ? ' • ' : ''}
+                                  {new Date(u.createdAt).toLocaleDateString('ru-RU')}
+                                </p>
                               </div>
                             </div>
                             <div className="flex gap-2 shrink-0">
@@ -3658,6 +3682,30 @@ export default function PanelPage() {
                         title="Показать тег"
                       >
                         <Eye className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {!hiddenTagsLoading && hiddenTagsTotal > 20 && (
+                <div className="mt-4 pt-3 border-t border-yellow-500/10">
+                  <Pagination
+                    current={hiddenTagsPage}
+                    total={Math.ceil(hiddenTagsTotal / 20)}
+                    onPageChange={(p) => loadHiddenTags(p, hiddenTagsSearch)}
+                  />
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+                       <Eye className="w-3 h-3" />
                       </button>
                     </div>
                   ))

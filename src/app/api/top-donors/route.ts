@@ -22,12 +22,27 @@ export async function GET() {
         exp: true,
         isSponsor: true,
         donated: true,
+        isPlaceholder: true,
         _count: { select: { submissions: true } },
       },
     })
 
     const results = await Promise.all(
       topDonors.map(async (u) => {
+        if (u.isPlaceholder) {
+          return {
+            id: u.id,
+            username: u.username,
+            image: u.image,
+            exp: 0,
+            isSponsor: u.isSponsor,
+            donated: u.donated,
+            isPlaceholder: true,
+            approvedSubmissions: 0,
+            totalSubmissions: 0,
+            tag: null,
+          }
+        }
         const approvedCount = await db.submission.count({
           where: { userId: u.id, status: 'approved' },
         })
@@ -43,6 +58,7 @@ export async function GET() {
           exp: u.exp,
           isSponsor: u.isSponsor,
           donated: u.donated,
+          isPlaceholder: false,
           approvedSubmissions: approvedCount,
           totalSubmissions: u._count.submissions,
           tag: tag || null,

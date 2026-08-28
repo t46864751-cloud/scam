@@ -1506,6 +1506,7 @@ function Top10View() {
                         Уровень {calcLevel(u.exp || 0).level} • {u.approvedSubmissions || 0} заявок
                       </p>
                     </div>
+                    {(u.donated || 0) > 0 && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30">
                         <span className="text-sm">💰</span>
@@ -1514,6 +1515,7 @@ function Top10View() {
                         </span>
                       </span>
                     </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -3489,6 +3491,11 @@ export default function Home() {
       </AnimatePresence>
       <AnimatePresence>
         {selectedScammer && <ScamerDetailModal key="detail-modal" scammer={selectedScammer} onClose={() => setSelectedScammer(null)} />}
+      </AnimatePresence>
+    </div>
+  )
+}
+e={() => setSelectedScammer(null)} />}
       </AnimatePresence>
     </div>
   )
